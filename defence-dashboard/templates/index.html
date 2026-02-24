@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DEFENCE INTELLIGENCE DASHBOARD</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+</head>
+
+<body>
+
+<div class="nav">
+<button onclick="showMap()">Gujarat Heatmap</button>
+<button onclick="showNews()">Newsletters</button>
+</div>
+
+<div id="mapSection" class="section active">
+<h2>Gujarat Military & Naval Intelligence Heatmap</h2>
+<div id="map"></div>
+</div>
+
+<div id="newsSection" class="section">
+<h2>Summarized Defence Newsletters</h2>
+<div id="newsContent"></div>
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

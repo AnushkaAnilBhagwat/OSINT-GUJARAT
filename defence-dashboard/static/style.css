@@ -1,0 +1,183 @@
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: radial-gradient(circle at top, #0f2a40 0%, #081421 60%);
+    color: white;
+}
+
+/* ===== NAVBAR ===== */
+.nav {
+    background: rgba(8, 20, 33, 0.85);
+    backdrop-filter: blur(10px);
+    padding: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+/* Modern Toggle Buttons */
+.nav button {
+    padding: 10px 20px;
+    background: transparent;
+    color: #00f7ff;
+    border: 1px solid #00f7ff55;
+    border-radius: 30px;
+    cursor: pointer;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: 0.3s ease;
+}
+
+.nav button:hover {
+    background: #00f7ff;
+    color: #081421;
+    box-shadow: 0 0 15px #00f7ff;
+    transform: translateY(-2px);
+}
+
+/* ===== HEADERS ===== */
+h2 {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    background: linear-gradient(90deg, #00f7ff, #00aaff);
+
+    /* Standard property */
+    background-clip: text;
+
+    /* Webkit for Chrome/Safari */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    color: transparent;
+    /* Fallback */
+
+    margin-bottom: 20px;
+    text-align: center;
+    text-shadow: 0 0 20px rgba(0, 247, 255, 0.3);
+}
+
+/* Sections */
+.section {
+    display: none;
+}
+
+.active {
+    display: block;
+}
+
+#map {
+    height: 75vh;
+    width: 100%;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+}
+
+/* ===== NEWS SECTION ===== */
+#newsSection {
+    min-height: 100vh;
+}
+
+#newsContent {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 30px;
+    margin-top: 30px;
+}
+
+/* ===== MODERN CARDS ===== */
+.card {
+    position: relative;
+    background: linear-gradient(145deg, #0f1f2f, #13283c);
+    padding: 25px;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    transition: 0.4s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+/* Accent Glow Strip */
+.card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, #00f7ff, #007bff);
+}
+
+.card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 50px rgba(0, 247, 255, 0.25);
+}
+
+/* Title */
+.card h3 {
+    color: #00f7ff;
+    font-size: 20px;
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+/* Summary */
+.card p {
+    color: #b0c4d4;
+    font-size: 14px;
+    line-height: 1.6;
+    flex-grow: 1;
+}
+
+/* ===== BUTTON STYLE (NEW LAYOUT) ===== */
+.card a {
+    margin-top: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 40px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #00f7ff, #007bff);
+    color: #081421;
+    text-decoration: none;
+    transition: 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Sliding Shine Effect */
+.card a::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: skewX(-20deg);
+    transition: 0.5s;
+}
+
+.card a:hover::after {
+    left: 120%;
+}
+
+.card a:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px #00f7ff;
+}
+
+/* Links */
+a {
+    color: #00d4ff;
+    text-decoration: none;
+}
+
