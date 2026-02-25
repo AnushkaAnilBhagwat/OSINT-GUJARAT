@@ -69,3 +69,23 @@ fetch('/api/newsletters')
         });
 
     });
+
+function showInsights() {
+    document.getElementById("insightsSection").classList.add("active");
+    document.getElementById("mapSection").classList.remove("active");
+    document.getElementById("newsSection").classList.remove("active");
+
+    let div = document.getElementById("aiContent");
+    div.innerHTML = `
+    <div style="text-align:center;padding:50px;">
+        <div class="loader"></div>
+        <p>AI is analyzing strategic patterns...</p>
+    </div>`;
+
+
+    fetch('/api/ai-analysis')
+        .then(res => res.json())
+        .then(data => {
+            div.innerHTML = `<p>${data.analysis}</p>`;
+        });
+}
