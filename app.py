@@ -6,7 +6,10 @@ from groq import Groq
 import os
 from newspaper import Article
 import time
+import openai
+from dotenv import load_dotenv
 
+load_dotenv()
 app = Flask(__name__)
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -64,34 +67,46 @@ def get_full_article_text(url):
     except:
         return ""
 
+def get_ai_summary(text):
+    if not text or len(text) < 100:
+        return "Article content too short to summarize."
+
+    try:
+        # Groq specific call
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile", # Reliable model on Groq
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "You are a professional news editor. Summarize the following news article in exactly two clear sentences."
+                },
+                {
+                    "role": "user", 
+                    "content": text[:3000] # Send only the first 3000 chars to avoid token limits
+                }
+            ],
+            temperature=0.5,
+            max_tokens=150
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        # This will print the actual error to your terminal so you can see what's wrong
+        print(f"AI Error: {e}")
+        return "Error generating AI summary."
+
 def fetch_news():
     global cached_articles, last_fetch_time
-    
-    if time.time() - last_fetch_time < 600 and cached_articles:
-        return cached_articles
+    # ... (Keep your cache logic) ...
 
     articles = []
-
     for source in NEWS_SOURCES:
         feed = feedparser.parse(source)
-
         for entry in feed.entries[:5]:
-            # 1. Try to get full text
-            full_text = get_full_article_text(entry.link)
-            
-            # 2. FALLBACK: If full text failed, use the feed's snippet
-            if not full_text:
-                full_text = extract_clean_content(entry)
-
-            # 3. Create summary from whatever text we managed to get
-            if full_text:
-                # Better sentence splitting logic
-                sentences = [s.strip() for s in re.split(r'[.!?]', full_text) if s.strip()]
-                short_summary = '. '.join(sentences[:3])
-                if short_summary:
-                    short_summary += '.'
-            else:
-                short_summary = "No summary available."
+            # Try full article first, then fallback to feed snippet
+            raw_text = get_full_article_text(entry.link) or extract_clean_content(entry)
+            print(f"Scraped Text Length: {len(raw_text)}") # If this is 0, the scraper is the problem, not the AI.
+            # CALL THE AI HERE
+            short_summary = get_ai_summary(raw_text)
 
             articles.append({
                 "title": entry.title,
