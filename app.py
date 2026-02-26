@@ -6,7 +6,7 @@ from groq import Groq
 import os
 from newspaper import Article
 import time
-import openai
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -69,7 +69,7 @@ def get_full_article_text(url):
 
 def get_ai_summary(text):
     if not text or len(text) < 100:
-        return "Article content too short to summarize."
+        return None
 
     try:
         # Groq specific call
@@ -92,26 +92,43 @@ def get_ai_summary(text):
     except Exception as e:
         # This will print the actual error to your terminal so you can see what's wrong
         print(f"AI Error: {e}")
-        return "Error generating AI summary."
+        return None
 
 def fetch_news():
     global cached_articles, last_fetch_time
-    # ... (Keep your cache logic) ...
+    
+    # Cache logic
+    if time.time() - last_fetch_time < 600 and cached_articles:
+        return cached_articles
 
     articles = []
     for source in NEWS_SOURCES:
         feed = feedparser.parse(source)
-        for entry in feed.entries[:5]:
-            # Try full article first, then fallback to feed snippet
-            raw_text = get_full_article_text(entry.link) or extract_clean_content(entry)
-            print(f"Scraped Text Length: {len(raw_text)}") # If this is 0, the scraper is the problem, not the AI.
-            # CALL THE AI HERE
-            short_summary = get_ai_summary(raw_text)
+        
+        for entry in feed.entries[:10]:
+            # --- 1. GET THE DATE ---
+            # Try to get the parsed date, fallback to current time if missing
+            if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                dt = datetime.fromtimestamp(time.mktime(entry.published_parsed))
+                formatted_date = dt.strftime("%b %d, %Y") # Example: "Oct 24, 2023"
+            elif hasattr(entry, 'published'):
+                formatted_date = entry.published
+            else:
+                formatted_date = "Date unknown"
 
+            # --- 2. GET CONTENT & SUMMARY ---
+            raw_text = get_full_article_text(entry.link) or extract_clean_content(entry)
+            short_summary = get_ai_summary(raw_text)
+            
+            if not short_summary:
+                short_summary = entry.title
+
+            # --- 3. APPEND TO LIST ---
             articles.append({
                 "title": entry.title,
                 "summary": short_summary,
-                "link": entry.link
+                "link": entry.link,
+                "published": formatted_date  # Added this field
             })
             
     cached_articles = articles
@@ -135,18 +152,24 @@ CITY_COORDS = {
 
 @app.route("/api/heatmap")
 def heatmap():
-
     articles = fetch_news()
-
     heat_points = []
     geo_articles = []
 
-    GUJARAT_COAST = (21.5, 69.5)
+    # Define a few specific base points along the coast to pick from
+    COASTAL_NODES = [
+        (22.47, 70.07), # Jamnagar/Sikka
+        (21.64, 69.60), # Porbandar
+        (20.90, 70.37), # Veraval
+        (20.71, 70.91), # Diu
+        (21.07, 72.11), # Bhavnagar/Alang
+        (22.84, 70.13)  # Kandla/Mundra
+    ]
 
     for article in articles:
-
         text = (article["title"] + article["summary"]).lower()
         assigned = False
+        lat, lon = (0, 0)
 
         # 1️⃣ Exact City Match
         for city, coords in CITY_COORDS.items():
@@ -155,11 +178,12 @@ def heatmap():
                 assigned = True
                 break
 
-        # 2️⃣ Naval / Coastal Keyword
-        if not assigned and any(word in text for word in [
-            "navy", "naval", "coast", "port", "ship", "fleet"
-        ]):
-            lat, lon = GUJARAT_COAST
+        # 2️⃣ Naval / Coastal Keyword - Scattered along the coast
+        if not assigned and any(word in text for word in ["navy", "naval", "coast", "port", "ship", "fleet"]):
+            base_lat, base_lon = random.choice(COASTAL_NODES)
+            # Add a tiny bit of random jitter so points don't overlap perfectly
+            lat = base_lat + random.uniform(-0.1, 0.1)
+            lon = base_lon + random.uniform(-0.1, 0.1)
             assigned = True
 
         # 3️⃣ If no match → RANDOM inside Gujarat
@@ -177,6 +201,7 @@ def heatmap():
             "title": article["title"],
             "summary": article["summary"],
             "link": article["link"],
+            "published": article["published"],
             "lat": lat,
             "lon": lon
         })

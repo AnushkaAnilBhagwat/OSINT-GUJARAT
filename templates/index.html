@@ -1,41 +1,61 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-<title>DEFENCE INTELLIGENCE DASHBOARD</title>
+  <head>
+    <title>DEFENCE INTELLIGENCE DASHBOARD</title>
 
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
 
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  </head>
 
-</head>
+  <body>
+    <header class="main-header">
+      <div class="header-left">
+        <img
+          src="{{ url_for('static', filename='assets/IndianNavyCrest-NewDesignBW6F-removebg-preview.png') }}"
+          class="header-logo"
+          alt="Indian Navy"
+        />
+      </div>
 
-<body>
+      <nav class="nav">
+        <button onclick="showInsights()">AI Insights</button>
+        <button onclick="showMap()">Gujarat Heatmap</button>
+        <button onclick="showNews()">Newsletters</button>
+      </nav>
 
-<div class="nav">
-<button onclick="showInsights()">AI Insights</button>
-<button onclick="showMap()">Gujarat Heatmap</button>
-<button onclick="showNews()">Newsletters</button>
-</div>
+      <div class="header-right">
+        <img
+          src="{{ url_for('static', filename='assets/valsura-removebg-preview.png') }}"
+          class="header-logo"
+          alt="Valsura"
+        />
+      </div>
+    </header>
 
-<div id="mapSection" class="section active">
-<h2>Gujarat Military & Naval Intelligence Heatmap</h2>
-<div id="map"></div>
-</div>
+    <div id="mapSection" class="section active">
+      <h2>Gujarat Military & Naval Intelligence Heatmap</h2>
+      <div id="map"></div>
+    </div>
 
-<div id="newsSection" class="section">
-<h2>Summarized Defence Newsletters</h2>
-<div id="newsContent"></div>
-</div>
+    <div id="newsSection" class="section">
+      <h2>Summarized Defence Newsletters</h2>
+      <div id="newsContent"></div>
+    </div>
 
-<div id="insightsSection" class="section">
-<h2>AI Intelligence Analysis</h2>
-<div id="aiContent"></div>
-</div>
+    <div id="insightsSection" class="section">
+      <h2>AI Intelligence Analysis</h2>
+      <div id="aiContent"></div>
+    </div>
 
-<script src="{{ url_for('static', filename='script.js') }}"></script>
-
-</body>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
 </html>

@@ -5,8 +5,40 @@ body {
     color: white;
 }
 
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    /* This creates the three-column layout */
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #0a192f;
+    /* Matching your dark theme */
+    border-bottom: 2px solid #00d4ff;
+    /* Techy underline */
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-logo {
+    height: 65px;
+    /* Adjust height as needed */
+    width: auto;
+    display: block;
+}
+/* Responsive fix: Hide or shrink logos on small mobile screens */
+@media (max-width: 600px) {
+    .logo {
+        height: 40px;
+        top: 5px;
+    }
+}
+
 /* ===== NAVBAR ===== */
 .nav {
+    margin: 10px auto;
+    text-align: center;
+    padding-top: 10px;
     background: rgba(8, 20, 33, 0.85);
     backdrop-filter: blur(10px);
     padding: 15px;
@@ -90,17 +122,30 @@ h2 {
 }
 
 /* ===== MODERN CARDS ===== */
+.date-tag {
+    font-size: 0.85rem;
+    color: #00d4ff;
+    /* Tech blue */
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 10px;
+    opacity: 0.8;
+}
+
 .card {
     position: relative;
     background: linear-gradient(145deg, #0f1f2f, #13283c);
     padding: 25px;
     border-radius: 18px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-    transition: 0.4s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     overflow: hidden;
+    margin-bottom: 20px;
 }
 
 /* Accent Glow Strip */
@@ -198,6 +243,52 @@ a {
     overflow: hidden;
 }
 
+.intel-brief-card {
+    max-width: 900px;
+    margin: 30px auto;
+    background: #0a192f;
+    border: 1px solid #00d4ff;
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.1);
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.intel-banner {
+    background: #00d4ff;
+    color: #06111d;
+    font-weight: bold;
+    text-align: center;
+    padding: 5px;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+}
+
+.intel-body {
+    padding: 40px;
+}
+
+.intel-heading {
+    color: #00d4ff;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin: 30px 0 15px 0;
+    border-bottom: 1px dashed #00d4ff;
+}
+
+.intel-item {
+    margin-bottom: 20px;
+    border-left: 3px solid #00d4ff;
+    padding-left: 15px;
+    line-height: 1.6;
+}
+
+.intel-metadata {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: #555;
+    margin-bottom: 30px;
+}
+
 #aiContent::before {
     content: "AI INTELLIGENCE REPORT";
     position: absolute;
@@ -224,6 +315,17 @@ a {
     height: 40px;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px;
+}
+
+.analysis-text {
+    line-height: 1.6;
+    color: #e0e0e0;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 4px solid #00d4ff;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    /* Preserves line breaks from the AI */
 }
 
 @keyframes spin {
