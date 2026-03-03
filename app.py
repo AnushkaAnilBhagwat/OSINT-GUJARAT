@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 import feedparser
 import random
 import re
@@ -107,14 +107,17 @@ def fetch_news():
         
         for entry in feed.entries[:10]:
             # --- 1. GET THE DATE ---
-            # Try to get the parsed date, fallback to current time if missing
             if hasattr(entry, 'published_parsed') and entry.published_parsed:
                 dt = datetime.fromtimestamp(time.mktime(entry.published_parsed))
-                formatted_date = dt.strftime("%b %d, %Y") # Example: "Oct 24, 2023"
             elif hasattr(entry, 'published'):
-                formatted_date = entry.published
+                try:
+                    dt = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %Z")
+                except:
+                    dt = datetime.now()
             else:
-                formatted_date = "Date unknown"
+                dt = datetime.now()
+
+            formatted_date = dt.strftime("%b %d, %Y")
 
             # --- 2. GET CONTENT & SUMMARY ---
             raw_text = get_full_article_text(entry.link) or extract_clean_content(entry)
@@ -125,11 +128,12 @@ def fetch_news():
 
             # --- 3. APPEND TO LIST ---
             articles.append({
-                "title": entry.title,
-                "summary": short_summary,
-                "link": entry.link,
-                "published": formatted_date  # Added this field
-            })
+            "title": entry.title,
+            "summary": short_summary,
+            "link": entry.link,
+            "published": formatted_date,     # For UI
+            "published_dt": dt               # For filtering (IMPORTANT)
+        })
             
     cached_articles = articles
     last_fetch_time = time.time()
@@ -155,6 +159,26 @@ def heatmap():
     articles = fetch_news()
     heat_points = []
     geo_articles = []
+    
+    # 🔹 Get date filters from UI
+    from_date_str = request.args.get("from")
+    to_date_str = request.args.get("to")
+    
+    # 🔹 Apply filtering if provided
+    if from_date_str and to_date_str:
+        try:
+            from_date = datetime.strptime(from_date_str, "%Y-%m-%d")
+            to_date = datetime.strptime(to_date_str, "%Y-%m-%d")
+            to_date = to_date.replace(hour=23, minute=59, second=59)
+
+            articles = [
+                a for a in articles
+                if from_date <= a["published_dt"] <= to_date
+            ]
+        except:
+            pass
+        
+        articles.sort(key=lambda x: x["published_dt"], reverse=True)
 
     # Define a few specific base points along the coast to pick from
     COASTAL_NODES = [
@@ -204,8 +228,7 @@ def heatmap():
             "published": article["published"],
             "lat": lat,
             "lon": lon
-        })
-
+        })      
     return jsonify({
         "heat": heat_points,
         "articles": geo_articles

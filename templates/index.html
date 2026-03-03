@@ -41,6 +41,16 @@
       </div>
     </header>
 
+    <div class="filter-bar">
+      <label>From:</label>
+      <input type="date" id="fromDate" />
+
+      <label>To:</label>
+      <input type="date" id="toDate" />
+
+      <button onclick="applyDateFilter()">Apply</button>
+    </div>
+
     <div id="mapSection" class="section active">
       <h2>Gujarat Military & Naval Intelligence Heatmap</h2>
       <div id="map"></div>
