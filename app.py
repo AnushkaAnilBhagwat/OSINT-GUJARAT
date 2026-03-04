@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, render_template, request
-import feedparser
+import requests
 import random
 import re
 from groq import Groq
@@ -14,16 +14,65 @@ app = Flask(__name__)
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# =========================================
-# NEWS SOURCES (MULTIPLE DEFENCE SOURCES)
-# =========================================
-NEWS_SOURCES = [
-    "https://news.google.com/rss/search?q=defence+Gujarat",
-    "https://news.google.com/rss/search?q=Indian+Navy+Gujarat",
-    "https://news.google.com/rss/search?q=Indian+Army+Gujarat",
-    "https://news.google.com/rss/search?q=military+base+Gujarat",
-    "https://news.google.com/rss/search?q=Indian+Air+Force+Gujarat",
-    "https://news.google.com/rss/search?q=Pakistan+Gujarat",
+NEWS_API_KEY = os.getenv("NEWS_API_KEY")
+
+global_intel_store = {
+    "articles": [],
+    "last_updated": 0,
+    "metadata": {}
+}
+
+INDIAN_STATES = {
+    "Andaman and Nicobar Islands": (11.7401, 92.6586),
+    "Andhra Pradesh": (15.9129, 79.7400),
+    "Arunachal Pradesh": (28.2180, 94.7278),
+    "Assam": (26.2006, 92.9376),
+    "Bihar": (25.0961, 85.3131),
+    "Chandigarh": (30.7333, 76.7794),
+    "Chhattisgarh": (21.2787, 81.8661),
+    "Dadra and Nagar Haveli and Daman and Diu": (20.3974, 72.8328),
+    "Delhi": (28.7041, 77.1025),
+    "Goa": (15.2993, 74.1240),
+    "Gujarat": (22.2587, 71.1924),
+    "Haryana": (29.0588, 76.0856),
+    "Himachal Pradesh": (31.1048, 77.1734),
+    "Jammu and Kashmir": (33.7782, 76.5762),
+    "Jharkhand": (23.6102, 85.2799),
+    "Karnataka": (15.3173, 75.7139),
+    "Kerala": (10.8505, 76.2711),
+    "Ladakh": (34.1526, 77.5770),
+    "Lakshadweep": (10.5667, 72.6417),
+    "Madhya Pradesh": (22.9734, 78.6569),
+    "Maharashtra": (19.7515, 75.7139),
+    "Manipur": (24.6637, 93.9063),
+    "Meghalaya": (25.4670, 91.3662),
+    "Mizoram": (23.1645, 92.9376),
+    "Nagaland": (26.1584, 94.5624),
+    "Odisha": (20.9517, 85.0985),
+    "Puducherry": (11.9416, 79.8083),
+    "Punjab": (31.1471, 75.3412),
+    "Rajasthan": (27.0238, 74.2179),
+    "Sikkim": (27.5330, 88.5122),
+    "Tamil Nadu": (11.1271, 78.6569),
+    "Telangana": (18.1124, 79.0193),
+    "Tripura": (23.9408, 91.9882),
+    "Uttar Pradesh": (26.8467, 80.9462),
+    "Uttarakhand": (30.0668, 79.0193),
+    "West Bengal": (22.9868, 87.8550)
+}
+
+INTEL_KEYWORDS = [
+    "military activity",
+    "non state actors",
+    "hacktivists",
+    "internal actors",
+    "Artificial Intelligence",
+    "paramilitary",
+    "Indian Navy",
+    "Indian Army",
+    "border tension",
+    "maritime security",
+    "Anti-Terrorism Squad"
 ]
 
 # Gujarat Geographic Bounds
@@ -31,41 +80,11 @@ LAT_MIN, LAT_MAX = 20.0, 24.7
 LON_MIN, LON_MAX = 68.0, 74.5
 
 
-cached_articles = []
-last_fetch_time = 0
+cached_articles = {}
 
 # =========================================
 # COLLECT & SUMMARIZE NEWS
 # =========================================
-
-def extract_clean_content(entry):
-    content = ""
-
-    # Try content field first (many feeds store full content here)
-    if "content" in entry:
-        content = entry.content[0].value
-
-    # Fallback to summary
-    elif "summary" in entry:
-        content = entry.summary
-
-    # Fallback to description
-    elif "description" in entry:
-        content = entry.description
-
-    # Remove HTML tags
-    clean_text = re.sub('<.*?>', '', content).strip()
-
-    return clean_text
-
-def get_full_article_text(url):
-    try:
-        article = Article(url)
-        article.download()
-        article.parse()
-        return article.text
-    except:
-        return ""
 
 def get_ai_summary(text):
     if not text or len(text) < 100:
@@ -94,133 +113,146 @@ def get_ai_summary(text):
         print(f"AI Error: {e}")
         return None
 
-def fetch_news():
-    global cached_articles, last_fetch_time
+@app.route("/api/fetch-all-intel")
+def fetch_all_intel():
+    """Master function to refresh all dashboard data at once."""
+    global global_intel_store
     
-    # Cache logic
-    if time.time() - last_fetch_time < 600 and cached_articles:
-        return cached_articles
+    # 1. Capture UI Parameters
+    keyword = request.args.get("keyword")
+    location = request.args.get("location", "Gujarat")
+    from_date = request.args.get("from")
+    to_date = request.args.get("to")
+    sources = request.args.get("sources", "news").split(",")
 
-    articles = []
-    for source in NEWS_SOURCES:
-        feed = feedparser.parse(source)
+    all_articles = []
+
+    # 2. Fetch News if selected
+    if "news" in sources:
+        news_data = fetch_news(
+            keyword=keyword, 
+            location=location, 
+            from_date=from_date, 
+            to_date=to_date
+        )
+        for art in news_data:
+            # Tag each article so the frontend knows how to color it
+            art["source"] = "News"
+            all_articles.append(art)
+
+    # 3. Update the Global Store
+    global_intel_store["articles"] = all_articles
+    global_intel_store["metadata"] = {"location": location, "keyword": keyword}
+    global_intel_store["last_updated"] = time.time()
+
+    # 4. Generate Heatmap Points
+    base_coords = INDIAN_STATES.get(location, (20.5937, 78.9629))
+    heat_points = []
+    geo_articles = []
+
+    for article in all_articles:
+        # Distribute points around the selected state center
+        lat = base_coords[0] + random.uniform(-1.0, 1.0)
+        lon = base_coords[1] + random.uniform(-1.0, 1.0)
         
-        for entry in feed.entries[:10]:
-            # --- 1. GET THE DATE ---
-            if hasattr(entry, 'published_parsed') and entry.published_parsed:
-                dt = datetime.fromtimestamp(time.mktime(entry.published_parsed))
-            elif hasattr(entry, 'published'):
-                try:
-                    dt = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %Z")
-                except:
-                    dt = datetime.now()
-            else:
-                dt = datetime.now()
+        heat_points.append([lat, lon, 0.7])
+        geo_articles.append({**article, "lat": lat, "lon": lon, "source": article.get("source", "News")})
 
-            formatted_date = dt.strftime("%b %d, %Y")
+    return jsonify({
+        "heat": heat_points,
+        "articles": geo_articles,
+        "center": base_coords
+    })
+    
+def fetch_news(keyword=None, location=None, from_date=None, to_date=None):
+    global cached_articles
 
-            # --- 2. GET CONTENT & SUMMARY ---
-            raw_text = get_full_article_text(entry.link) or extract_clean_content(entry)
-            short_summary = get_ai_summary(raw_text)
-            
-            if not short_summary:
-                short_summary = entry.title
+    # Construct a robust search query combining keyword and location
+    search_query = ""
+    if keyword and location:
+        search_query = f"{keyword} AND {location}"
+    elif location:
+        search_query = f'"{location}"'
+    else:
+        search_query = " OR ".join(INTEL_KEYWORDS)
 
-            # --- 3. APPEND TO LIST ---
-            articles.append({
-            "title": entry.title,
+    cache_key = f"{search_query}_{from_date}_{to_date}"
+
+    if (cache_key in cached_articles and time.time() - cached_articles[cache_key]["time"] < 600):
+        return cached_articles[cache_key]["data"]
+
+    url = "https://newsapi.org/v2/everything"
+    params = {
+        # 'qInTitle' ensures the keywords MUST be in the headline
+        "q": search_query, 
+        "language": "en",
+        "sortBy": "relevancy",
+        "apiKey": NEWS_API_KEY,
+        "pageSize": 50
+    }
+    if from_date: params["from"] = from_date
+    if to_date: params["to"] = to_date
+
+    response = requests.get(url, params=params)
+    if response.status_code != 200:
+        return []
+
+    data = response.json()
+    articles = []
+
+    for item in data.get("articles", []):
+        try:
+            dt = datetime.strptime(item["publishedAt"], "%Y-%m-%dT%H:%M:%SZ")
+        except:
+            dt = datetime.now()
+
+        # Get AI summary or fallback
+        raw_text = item.get("content") or item.get("description") or item.get("title")
+        short_summary = get_ai_summary(raw_text)
+        if not short_summary:
+            short_summary = item.get("description") or item.get("title")
+
+        articles.append({
+            "title": item["title"],
             "summary": short_summary,
-            "link": entry.link,
-            "published": formatted_date,     # For UI
-            "published_dt": dt               # For filtering (IMPORTANT)
+            "link": item["url"],
+            "published": dt.strftime("%b %d, %Y"),
+            "published_dt": dt
         })
-            
-    cached_articles = articles
-    last_fetch_time = time.time()
+
+    cached_articles[cache_key] = {"data": articles, "time": time.time()}
     return articles
-
-
-# =========================================
-# GUJARAT HEATMAP API
-# =========================================
-
-CITY_COORDS = {
-    "ahmedabad": (23.0225, 72.5714),
-    "rajkot": (22.3039, 70.8022),
-    "porbandar": (21.6417, 69.6293),
-    "bhuj": (23.2420, 69.6669),
-    "surat": (21.1702, 72.8311),
-    "vadodara": (22.3072, 73.1812)
-}
 
 
 @app.route("/api/heatmap")
 def heatmap():
-    articles = fetch_news()
+    keyword = request.args.get("keyword")
+    location_name = request.args.get("location", "Gujarat")
+    from_date = request.args.get("from")
+    to_date = request.args.get("to")
+
+    # Fetch news using ALL filters
+    articles = fetch_news(
+        keyword=keyword, 
+        location=location_name, 
+        from_date=from_date, 
+        to_date=to_date
+    )
+    
+    # Get base coordinates for the selected state to center the heatmap
+    base_coords = INDIAN_STATES.get(location_name, (22.2587, 71.1924))
+    
     heat_points = []
     geo_articles = []
-    
-    # 🔹 Get date filters from UI
-    from_date_str = request.args.get("from")
-    to_date_str = request.args.get("to")
-    
-    # 🔹 Apply filtering if provided
-    if from_date_str and to_date_str:
-        try:
-            from_date = datetime.strptime(from_date_str, "%Y-%m-%d")
-            to_date = datetime.strptime(to_date_str, "%Y-%m-%d")
-            to_date = to_date.replace(hour=23, minute=59, second=59)
-
-            articles = [
-                a for a in articles
-                if from_date <= a["published_dt"] <= to_date
-            ]
-        except:
-            pass
-        
-        articles.sort(key=lambda x: x["published_dt"], reverse=True)
-
-    # Define a few specific base points along the coast to pick from
-    COASTAL_NODES = [
-        (22.47, 70.07), # Jamnagar/Sikka
-        (21.64, 69.60), # Porbandar
-        (20.90, 70.37), # Veraval
-        (20.71, 70.91), # Diu
-        (21.07, 72.11), # Bhavnagar/Alang
-        (22.84, 70.13)  # Kandla/Mundra
-    ]
 
     for article in articles:
-        text = (article["title"] + article["summary"]).lower()
-        assigned = False
-        lat, lon = (0, 0)
+        # Generate jittered coordinates around the state center
+        # We use a 1.0 degree spread to cover the state area roughly
+        lat = base_coords[0] + random.uniform(-0.8, 0.8)
+        lon = base_coords[1] + random.uniform(-0.8, 0.8)
 
-        # 1️⃣ Exact City Match
-        for city, coords in CITY_COORDS.items():
-            if city in text:
-                lat, lon = coords
-                assigned = True
-                break
-
-        # 2️⃣ Naval / Coastal Keyword - Scattered along the coast
-        if not assigned and any(word in text for word in ["navy", "naval", "coast", "port", "ship", "fleet"]):
-            base_lat, base_lon = random.choice(COASTAL_NODES)
-            # Add a tiny bit of random jitter so points don't overlap perfectly
-            lat = base_lat + random.uniform(-0.1, 0.1)
-            lon = base_lon + random.uniform(-0.1, 0.1)
-            assigned = True
-
-        # 3️⃣ If no match → RANDOM inside Gujarat
-        if not assigned:
-            lat = random.uniform(LAT_MIN, LAT_MAX)
-            lon = random.uniform(LON_MIN, LON_MAX)
-
-        # Small jitter to prevent exact overlap
-        lat += random.uniform(-0.2, 0.2)
-        lon += random.uniform(-0.2, 0.2)
-
-        heat_points.append([lat, lon, 0.8])
-
+        heat_points.append([lat, lon, 0.7]) # Intensity 0.7
+        
         geo_articles.append({
             "title": article["title"],
             "summary": article["summary"],
@@ -229,11 +261,12 @@ def heatmap():
             "lat": lat,
             "lon": lon
         })      
+
     return jsonify({
         "heat": heat_points,
-        "articles": geo_articles
+        "articles": geo_articles,
+        "center": base_coords # Return center to help frontend re-focus
     })
-
 
 
 # =========================================
@@ -241,16 +274,17 @@ def heatmap():
 # =========================================
 @app.route("/api/newsletters")
 def newsletters():
-    articles = fetch_news()
-    return jsonify(articles[:25])
+    # Uses pre-loaded articles from the global store
+    return jsonify(global_intel_store["articles"][:25])
 
 
 @app.route("/api/ai-analysis")
 def ai_analysis():
-    articles = fetch_news()   # your existing RSS function
-
+    # Uses pre-loaded articles from the global store
+    articles = global_intel_store["articles"]
+    
     if not articles:
-        return jsonify({"analysis": "No news available for analysis."})
+        return jsonify({"analysis": "No pre-loaded data found. Please run a Scan first."})
 
     try:
         analysis = analyze_news_with_ai(articles)
