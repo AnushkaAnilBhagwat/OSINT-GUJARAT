@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+    <title>Maritime Domain Awareness</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body>
+
+<header class="main-header">
+    <h1>MARITIME DOMAIN AWARENESS</h1>
+    <button onclick="window.location.href='/'">← Back to Dashboard</button>
+</header>
+
+<div class="filter-bar">
+    <div class="filter-group">
+        <label>Country</label>
+        <select id="countrySelect">
+            <option>All</option>
+            <option>India</option>
+            <option>Pakistan</option>
+            <option>China</option>
+            <option>Bangladesh</option>
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <label>Vessel Type</label>
+        <select id="typeSelect">
+            <option>All</option>
+            <option>Naval</option>
+            <option>Cargo</option>
+            <option>Tanker</option>
+        </select>
+    </div>
+
+    <button class="apply-btn" onclick="loadMaritime()">Apply Filter</button>
+</div>
+
+<div id="map" style="height:80vh;"></div>
+
+<script>
+var map = L.map('map').setView([20, 80], 5);
+
+L.tileLayer(
+'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+).addTo(map);
+
+let markers = L.layerGroup().addTo(map);
+
+function loadMaritime() {
+
+    let country = document.getElementById("countrySelect").value;
+    let type = document.getElementById("typeSelect").value;
+
+    fetch(`/api/maritime-data?country=${country}&type=${type}`)
+        .then(res => res.json())
+        .then(data => {
+
+            markers.clearLayers();
+
+            // Ports
+            data.ports.forEach(port => {
+                L.marker([port.lat, port.lon])
+                 .bindPopup(`<b>PORT:</b> ${port.name}<br>${port.country}`)
+                 .addTo(markers);
+            });
+
+            // Vessels
+            data.vessels.forEach(vessel => {
+
+                let color = vessel.type === "Naval" ? "red" :
+                            vessel.type === "Cargo" ? "blue" :
+                            vessel.type === "Tanker" ? "green" : "gray";
+
+                L.circleMarker([vessel.lat, vessel.lon], {
+                    radius: 8,
+                    fillColor: color,
+                    color: "#fff",
+                    weight: 1,
+                    fillOpacity: 0.9
+                }).bindPopup(`
+                    <b>${vessel.name}</b><br>
+                    Type: ${vessel.type}<br>
+                    Country: ${vessel.country}
+                `).addTo(markers);
+            });
+        });
+}
+
+loadMaritime();
+</script>
+
+</body>
+</html>

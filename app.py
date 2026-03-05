@@ -8,6 +8,7 @@ from newspaper import Article
 import time
 from datetime import datetime
 from dotenv import load_dotenv
+from requests_oauthlib import OAuth1
 
 load_dotenv()
 app = Flask(__name__)
@@ -15,6 +16,7 @@ app = Flask(__name__)
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
+TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
 
 global_intel_store = {
     "articles": [],
@@ -115,10 +117,7 @@ def get_ai_summary(text):
 
 @app.route("/api/fetch-all-intel")
 def fetch_all_intel():
-    """Master function to refresh all dashboard data at once."""
     global global_intel_store
-    
-    # 1. Capture UI Parameters
     keyword = request.args.get("keyword")
     location = request.args.get("location", "Gujarat")
     from_date = request.args.get("from")
@@ -127,54 +126,78 @@ def fetch_all_intel():
 
     all_articles = []
 
-    # 2. Fetch News if selected
+    # 1. Standalone Twitter Block
+    if "twitter" in sources:
+        twitter_data = fetch_twitter(keyword, location, from_date, to_date)
+        for tw in twitter_data:
+            tw["source"] = "Twitter" # Ensure it's tagged as Twitter
+            all_articles.append(tw)
+
+    # 2. Standalone News Block
     if "news" in sources:
-        news_data = fetch_news(
-            keyword=keyword, 
-            location=location, 
-            from_date=from_date, 
-            to_date=to_date
-        )
+        news_data = fetch_news(keyword, location, from_date, to_date)
         for art in news_data:
-            # Tag each article so the frontend knows how to color it
             art["source"] = "News"
             all_articles.append(art)
 
-    # 3. Update the Global Store
     global_intel_store["articles"] = all_articles
-    global_intel_store["metadata"] = {"location": location, "keyword": keyword}
-    global_intel_store["last_updated"] = time.time()
-
-    # 4. Generate Heatmap Points
-    base_coords = INDIAN_STATES.get(location, (20.5937, 78.9629))
+    
+    base_coords = INDIAN_STATES.get(location, (20.59, 78.96))
     heat_points = []
     geo_articles = []
 
     for article in all_articles:
-        # Distribute points around the selected state center
-        lat = base_coords[0] + random.uniform(-1.0, 1.0)
-        lon = base_coords[1] + random.uniform(-1.0, 1.0)
-        
+        lat = base_coords[0] + random.uniform(-0.8, 0.8)
+        lon = base_coords[1] + random.uniform(-0.8, 0.8)
         heat_points.append([lat, lon, 0.7])
+        # Pass the original source key through to the frontend
         geo_articles.append({**article, "lat": lat, "lon": lon, "source": article.get("source", "News")})
 
-    return jsonify({
-        "heat": heat_points,
-        "articles": geo_articles,
-        "center": base_coords
-    })
+    return jsonify({"heat": heat_points, "articles": geo_articles, "center": base_coords})
+
+def fetch_twitter(keyword=None, location=None, from_date=None, to_date=None):
+    bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
+    headers = {"Authorization": f"Bearer {bearer_token}"}
     
+    # Query building
+    query = f"{keyword} {location} (defence OR military OR security) -is:retweet"
+    url = "https://api.twitter.com/2/tweets/search/recent"
+    
+    params = {
+        "query": query,
+        "max_results": 10,
+        "tweet.fields": "created_at,text",
+    }
+
+    # API Request (Removed auth=auth to fix conflict)
+    response = requests.get(url, headers=headers, params=params)
+    
+    if response.status_code != 200:
+        print(f"Twitter Error: {response.text}")
+        return []
+
+    data = response.json()
+    tweets = []
+    for item in data.get("data", []):
+        tweets.append({
+            "title": item["text"][:50] + "...",
+            "summary": item["text"],
+            "link": f"https://twitter.com/user/status/{item['id']}",
+            "published": item["created_at"][:10],
+            "source": "Twitter"
+        })
+    return tweets
+
+   
 def fetch_news(keyword=None, location=None, from_date=None, to_date=None):
     global cached_articles
 
-    # Construct a robust search query combining keyword and location
-    search_query = ""
-    if keyword and location:
-        search_query = f"{keyword} AND {location}"
-    elif location:
-        search_query = f'"{location}"'
+    # Ensure location is always used to filter
+    if keyword and keyword != "None":
+        search_query = f"{keyword} {location}"
     else:
-        search_query = " OR ".join(INTEL_KEYWORDS)
+        search_query = f"{location} defence"
+    
 
     cache_key = f"{search_query}_{from_date}_{to_date}"
 
@@ -223,6 +246,67 @@ def fetch_news(keyword=None, location=None, from_date=None, to_date=None):
     cached_articles[cache_key] = {"data": articles, "time": time.time()}
     return articles
 
+# =========================================
+# FETCH TWITTER DEFENCE INTEL
+# =========================================
+
+def fetch_twitter(keyword=None, location=None, from_date=None, to_date=None):
+    bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
+    headers = {"Authorization": f"Bearer {bearer_token}"}
+    # OAuth 1.0a Authentication
+    auth = OAuth1(
+        os.getenv("TWITTER_API_KEY"),
+        os.getenv("API_secret_key"),
+        os.getenv("Access_token"),
+        os.getenv("Access_token_secret")
+    )
+
+    # Build search query
+    if keyword and location:
+        search_query = f"{keyword} {location} (defence OR military OR navy OR army OR security)"
+    elif location:
+        search_query = f"{location} (defence OR military OR navy OR army OR security)"
+    else:
+        search_query = "(defence OR military OR navy OR army OR security)"
+
+    url = "https://api.twitter.com/2/tweets/search/recent"
+
+    params = {
+        "query": search_query,
+        "max_results": 5,
+        "tweet.fields": "created_at,text",
+    }
+
+    if from_date:
+        params["start_time"] = from_date + "T00:00:00Z"
+    if to_date:
+        params["end_time"] = to_date + "T23:59:59Z"
+
+    response = requests.get(url, headers=headers, params=params)
+
+    if response.status_code != 200:
+        print("Twitter API Error:", response.status_code, response.text)
+        return []
+
+    data = response.json()
+    tweets = []
+
+    for item in data.get("data", []):
+        try:
+            dt = datetime.strptime(item["created_at"], "%Y-%m-%dT%H:%M:%S.%fZ")
+        except:
+            dt = datetime.now()
+
+        tweets.append({
+            "title": item["text"][:80] + "...",
+            "summary": item["text"],
+            "link": f"https://twitter.com/i/web/status/{item['id']}",
+            "published": dt.strftime("%b %d, %Y"),
+            "published_dt": dt,
+            "source": "Twitter"
+        })
+
+    return tweets
 
 @app.route("/api/heatmap")
 def heatmap():
@@ -232,12 +316,29 @@ def heatmap():
     to_date = request.args.get("to")
 
     # Fetch news using ALL filters
-    articles = fetch_news(
-        keyword=keyword, 
-        location=location_name, 
-        from_date=from_date, 
-        to_date=to_date
-    )
+    articles = []
+
+    if "news" in request.args.get("sources", "news"):
+        articles.extend(fetch_news(
+            keyword=keyword,
+            location=location_name,
+            from_date=from_date,
+            to_date=to_date
+        ))
+
+    if "twitter" in request.args.get("sources", ""):
+        articles.extend(fetch_twitter(
+            keyword=keyword,
+            location=location_name,
+            from_date=from_date,
+            to_date=to_date
+        ))
+    # articles = fetch_news(
+    #     keyword=keyword, 
+    #     location=location_name, 
+    #     from_date=from_date, 
+    #     to_date=to_date
+    # )
     
     # Get base coordinates for the selected state to center the heatmap
     base_coords = INDIAN_STATES.get(location_name, (22.2587, 71.1924))
@@ -292,6 +393,93 @@ def ai_analysis():
     except Exception as e:
         return jsonify({"analysis": f"AI Error: {str(e)}"})
     
+@app.route("/api/maritime-data")
+def maritime_data():
+
+    country_filter = request.args.get("country", "All")
+    vessel_type = request.args.get("type", "All")
+
+    ports = [
+            # India
+        {"name": "Mundra Port", "lat": 22.74, "lon": 69.70, "country": "India"},
+        {"name": "Mumbai Port", "lat": 18.95, "lon": 72.84, "country": "India"},
+        {"name": "Goa Port", "lat": 15.40, "lon": 73.80, "country": "India"},
+        {"name": "Kochi Port", "lat": 9.97, "lon": 76.26, "country": "India"},
+        {"name": "Chennai Port", "lat": 13.08, "lon": 80.27, "country": "India"},
+        {"name": "Visakhapatnam Port", "lat": 17.69, "lon": 83.25, "country": "India"},
+        {"name": "Kolkata Port", "lat": 22.55, "lon": 88.30, "country": "India"},
+        {"name": "Port Blair Port", "lat": 11.67, "lon": 92.75, "country": "India"},
+
+        # Pakistan
+        {"name": "Karachi Port", "lat": 24.85, "lon": 66.99, "country": "Pakistan"},
+        {"name": "Gwadar Port", "lat": 25.12, "lon": 62.33, "country": "Pakistan"},
+
+        # China
+        {"name": "Shanghai Port", "lat": 31.23, "lon": 121.47, "country": "China"},
+        {"name": "Ningbo Port", "lat": 29.87, "lon": 121.55, "country": "China"},
+        {"name": "Guangzhou Port", "lat": 23.12, "lon": 113.25, "country": "China"},
+
+        # Bangladesh
+        {"name": "Chittagong Port", "lat": 22.33, "lon": 91.82, "country": "Bangladesh"},
+        {"name": "Mongla Port", "lat": 22.47, "lon": 89.58, "country": "Bangladesh"}
+    ]
+
+    vessels = [
+            
+        # ---------------- WEST COAST ----------------
+        {"name": "MV Arabian Trader", "lat": 22.8, "lon": 69.7, "country": "India", "type": "Cargo"},
+        {"name": "MT Gulf Horizon", "lat": 19.0, "lon": 72.8, "country": "Singapore", "type": "Tanker"},
+        {"name": "INS Kolkata", "lat": 15.4, "lon": 73.8, "country": "India", "type": "Naval"},
+        {"name": "MV Persian Star", "lat": 17.2, "lon": 72.5, "country": "Iran", "type": "Cargo"},
+
+        # ---------------- EAST COAST ----------------
+        {"name": "MV Bay Carrier", "lat": 13.1, "lon": 80.3, "country": "India", "type": "Cargo"},
+        {"name": "MT Pacific Energy", "lat": 17.7, "lon": 83.3, "country": "Japan", "type": "Tanker"},
+        {"name": "INS Vikramaditya", "lat": 8.4, "lon": 76.9, "country": "India", "type": "Naval"},
+        {"name": "MV Dragon Pearl", "lat": 31.2, "lon": 122.5, "country": "China", "type": "Cargo"},
+        
+        # ---------------- ANDAMAN ----------------
+        {"name": "INS Baaz Patrol", "lat": 11.7, "lon": 92.7, "country": "India", "type": "Naval"},
+        {"name": "MV Strait Runner", "lat": 9.8, "lon": 94.5, "country": "Malaysia", "type": "Cargo"},
+
+        # ---------------- FISHING & COASTAL ----------------
+        {"name": "FV Kerala Queen", "lat": 9.9, "lon": 76.2, "country": "India", "type": "Cargo"},
+        {"name": "MT Global Energy", "lat": 21.0, "lon": 88.0, "country": "Liberia", "type": "Tanker"},
+
+        # ---------------- INDIA ----------------
+        {"name": "MV Indian Trader", "lat": 18.5, "lon": 72.2, "country": "India", "type": "Cargo"},
+
+        # ---------------- PAKISTAN ----------------
+        {"name": "PNS Zulfiquar", "lat": 24.8, "lon": 67.0, "country": "Pakistan", "type": "Naval"},
+        {"name": "MV Pakistan Cargo", "lat": 24.7, "lon": 66.7, "country": "Pakistan", "type": "Cargo"},
+
+        # ---------------- CHINA ----------------
+        {"name": "PLAN Type 052D", "lat": 31.2, "lon": 121.4, "country": "China", "type": "Naval"},
+        {"name": "MV Yangtze Trader", "lat": 29.8, "lon": 121.6, "country": "China", "type": "Cargo"},
+
+        # ---------------- BANGLADESH ----------------
+        {"name": "BNS Bangabandhu", "lat": 22.3, "lon": 91.8, "country": "Bangladesh", "type": "Naval"},
+        {"name": "MV Bengal Mariner", "lat": 22.4, "lon": 89.6, "country": "Bangladesh", "type": "Tanker"},
+
+        # ---------------- DEEP SEA ----------------
+        {"name": "MT Sea Phantom", "lat": 22.0, "lon": 88.30, "country": "Liberia", "type": "Tanker"},
+        {"name": "FV Fisher Ace", "lat": 8.4, "lon": 77.0, "country": "India", "type": "Cargo"}
+
+    ]
+
+    if country_filter != "All":
+        ports = [p for p in ports if p["country"] == country_filter]
+        vessels = [v for v in vessels if v["country"] == country_filter]
+
+    if vessel_type != "All":
+        vessels = [v for v in vessels if v["type"] == vessel_type]
+
+    return jsonify({
+        "ports": ports,
+        "vessels": vessels
+    })
+
+    
 def analyze_news_with_ai(articles):
 
     combined_text = ""
@@ -337,6 +525,14 @@ News:
 @app.route("/")
 def home():
     return render_template("index.html")
+
+# =========================================
+# MARITIME DOMAIN AWARENESS PAGE
+# =========================================
+
+@app.route("/maritime")
+def maritime():
+    return render_template("maritime.html")
 
 if __name__ == "__main__":
     app.run(debug=True)

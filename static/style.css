@@ -26,6 +26,7 @@ body {
     width: auto;
     display: block;
 }
+
 /* Responsive fix: Hide or shrink logos on small mobile screens */
 @media (max-width: 600px) {
     .header-logo {
