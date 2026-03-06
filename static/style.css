@@ -120,11 +120,45 @@ body {
     cursor: pointer;
     transition: 0.3s;
     height: 40px;
+    margin-right: 70px;
 }
 
 .apply-btn:hover {
     box-shadow: 0 0 15px #00d4ff;
     transform: translateY(-2px);
+}
+
+/* Glowing Box for AIS Filters */
+.ais-container {
+    position: relative;
+    display: flex;
+    gap: 20px;
+    padding: 15px 20px;
+    border: 1px solid #00f7ff;
+    border-radius: 8px;
+    /* Neon glow effect */
+    box-shadow: 0 0 10px rgba(0, 247, 255, 0.2), inset 0 0 5px rgba(0, 247, 255, 0.1);
+    margin-left: 10px;
+}
+
+/* AIS Header positioned on the top border */
+.ais-header {
+    position: absolute;
+    top: -10px;
+    left: 15px;
+    background: #081421;
+    /* Matches your body background */
+    padding: 0 8px;
+    color: #00f7ff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+/* Ensure the groups inside don't add extra margin */
+.ais-container .filter-group {
+    margin-bottom: 0;
 }
 
 /* ===== NEWS SECTION & "NICE" CARDS ===== */
@@ -137,6 +171,26 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 30px;
     margin-top: 30px;
+}
+
+/* Style for the new link in the news card */
+.news-link {
+    font-size: 0.8rem;
+    color: #00d4ff;
+    font-weight: bold;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: 0.3s ease;
+    border: 1px solid #00d4ff33;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+.news-link:hover {
+    color: #081421;
+    background: #00d4ff;
+    box-shadow: 0 0 10px #00d4ff;
 }
 
 .news-card {
@@ -217,6 +271,35 @@ h2 {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: 0 0 20px rgba(0, 247, 255, 0.3);
+}
+
+/* Center the zoom controls on the right and make them sticky */
+.leaflet-top.leaflet-right {
+    position: fixed !important;
+    top: 60% !important;
+    right: 20px !important;
+    transform: translateY(-50%);
+    /* Perfectly centers the block vertically */
+    z-index: 1100;
+    /* Ensures it stays above the map and other layers */
+    margin: 0 !important;
+}
+
+/* Optional: Match the zoom buttons to your Dashboard UI */
+.leaflet-bar {
+    border: 1px solid #00f7ff55 !important;
+    box-shadow: 0 0 15px rgba(0, 247, 255, 0.3) !important;
+}
+
+.leaflet-bar a {
+    background-color: #0a192f !important;
+    color: #00f7ff !important;
+    border-bottom: 1px solid #00f7ff33 !important;
+}
+
+.leaflet-bar a:hover {
+    background-color: #00f7ff !important;
+    color: #081421 !important;
 }
 
 /* ===== AI INSIGHTS PANEL (STRUCTURED INTELLIGENCE BRIEF) ===== */
@@ -380,7 +463,9 @@ h2 {
     border-bottom: 1px solid #00f7ff33;
     padding: 10px 40px;
     display: flex;
-    gap: 40px;
+    justify-content: center;
+    align-items: center;
+    gap: 80px;
     font-family: 'Courier New', Courier, monospace;
     /* Strategic/Terminal font */
     backdrop-filter: blur(5px);

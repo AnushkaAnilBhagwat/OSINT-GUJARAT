@@ -9,7 +9,7 @@ var map = L.map('map', {
 
 // Add the zoom control to the bottom right instead
 L.control.zoom({
-    position: 'bottomright'
+    position: 'topright'
 }).addTo(map);
 markersLayer = L.layerGroup().addTo(map);
 
@@ -95,14 +95,19 @@ function applyFilters() {
 
                 // RESTORED: Professional News Popup Format
                 marker.bindPopup(`
-                    <div style="min-width:250px; color:#333; font-family: 'Segoe UI', sans-serif;">
-                        <small style="color:#666;"><b>[${article.source.toUpperCase()}] - ${article.published}</b></small><br>
-                        <strong style="font-size:15px; display:block; margin-top:5px;">${article.title}</strong>
-                        <hr style="margin:8px 0; border:0; border-top:1px solid #eee;">
-                        <p style="font-size:13px; line-height:1.4; color:#444;">${article.summary}</p>
-                        <a href="${article.link}" target="_blank" style="color:#007bff; font-weight:bold; text-decoration:none; font-size:12px;">Full Report →</a>
-                    </div>
-                `);
+    <div style="min-width:250px; color:#333; font-family: 'Segoe UI', sans-serif;">
+        <small style="color:#666;"><b>[${article.source.toUpperCase()}] - ${article.published}</b></small><br>
+        <strong style="font-size:15px; display:block; margin-top:5px;">${article.title}</strong>
+        <hr style="margin:8px 0; border:0; border-top:1px solid #eee;">
+        <p style="font-size:13px; line-height:1.4; color:#444;">${article.summary}</p>
+        
+        <a href="javascript:void(0);" 
+           onclick="showInsights();" 
+           style="color:#007bff; font-weight:bold; text-decoration:none; font-size:12px; cursor:pointer;">
+           View AI Analysis →
+        </a>
+    </div>
+`);
                 markersLayer.addLayer(marker);
             });
 
@@ -142,13 +147,17 @@ function applyFilters() {
             });
         });
 }
+
 function updateNewsTab(articles) {
     const container = document.getElementById("newsContent");
     container.innerHTML = articles.map(art => `
         <div class="news-card">
             <h4>${art.title}</h4>
             <p>${art.summary}</p>
-            <small>Source: ${art.source} | ${art.published}</small>
+            <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <small>${art.published}</small>
+                <a href="${art.link}" target="_blank" class="news-link">Full Article →</a>
+            </div>
         </div>
     `).join('');
 }
@@ -162,6 +171,7 @@ function fetchAiAnalysis() {
         .then(data => {
             let reportHtml = data.analysis
                 .replace(/### (.*?)\n/g, '<div class="intel-heading">$1</div>')
+                .replace(/\d+\. \*\*(.*?)\*\*/g, '<div class="intel-item"><strong>$1</strong>')
                 .replace(/\n/g, '<br>');
             div.innerHTML = `<div class="intel-content">${reportHtml}</div>`;
         });

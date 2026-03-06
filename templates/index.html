@@ -121,33 +121,33 @@
           <input type="date" id="toDate" />
         </div>
 
-        <div class="filter-group">
-          <label>Maritime Country:</label>
-          <select id="countrySelect">
-            <option value="All">All</option>
-            <option value="Pakistan">Pakistan</option>
-            <option value="China">China</option>
-            <option value="Bangladesh">Bangladesh</option>
-          </select>
-        </div>
+        <div class="ais-container">
+          <span class="ais-header">AIS Data</span>
 
-        <div class="filter-group">
-          <label>Vessel Type:</label>
-          <select id="typeSelect">
-            <option value="All">All</option>
-            <option value="Naval">Naval</option>
-            <option value="Cargo">Cargo</option>
-            <option value="Tanker">Tanker</option>
-          </select>
-        </div>
+          <div class="filter-group">
+            <label>Country:</label>
+            <select id="countrySelect">
+              <option value="All">All</option>
+              <option value="Pakistan">Pakistan</option>
+              <option value="China">China</option>
+              <option value="Bangladesh">Bangladesh</option>
+            </select>
+          </div>
 
-        <button class="apply-btn" onclick="applyFilters()">
-          Execute Intelligence Scan
-        </button>
+          <div class="filter-group">
+            <label>Vessel Type:</label>
+            <select id="typeSelect">
+              <option value="All">All</option>
+              <option value="Naval">Naval</option>
+              <option value="Cargo">Cargo</option>
+              <option value="Tanker">Tanker</option>
+            </select>
+          </div>
+        </div>
 
         <nav class="nav">
-          <button onclick="showInsights()">Insights</button>
           <button onclick="showMap()">Map</button>
+          <button onclick="showInsights()">Insights</button>
           <button onclick="showNews()">List</button>
 
           <div class="map-legend">
@@ -168,6 +168,11 @@
             </div>
           </div>
         </nav>
+
+        <button class="apply-btn" onclick="applyFilters()">
+          Execute Intelligence Scan
+        </button>
+
       </div>
     </div>
     <div id="scanInfoBar" class="scan-info-bar" style="display: none">
