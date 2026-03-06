@@ -17,159 +17,192 @@
   </head>
 
   <body>
-    <header class="main-header">
-      <div class="header-left">
-        <img
-          src="{{ url_for('static', filename='assets/IndianNavyCrest-NewDesignBW6F-removebg-preview.png') }}"
-          class="header-logo"
-          alt="Indian Navy"
-        />
-      </div>
-
-      <div class="header-center">
-        <h1>DEFENCE INTELLIGENCE DASHBOARD</h1>
-        <span class="classified-tag">OSINT MONITORING SYSTEM</span>
-      </div>
-
-      <nav class="nav">
-        <button onclick="showInsights()">AI Insights</button>
-        <button onclick="showMap()">Heatmap</button>
-        <button onclick="showNews()">Newsletters</button>
-        <button onclick="window.location.href='/maritime'">Maritime Monitor</button>
-      </nav>
-
-      <div class="header-right">
-        <img
-          src="{{ url_for('static', filename='assets/valsura-removebg-preview.png') }}"
-          class="header-logo"
-          alt="Valsura"
-        />
-      </div>
-    </header>
-
-    <!-- FILTER BAR -->
-    <div class="filter-bar">
-      <div class="filter-group">
-        <label>Sources:</label>
-        <div style="display: flex; gap: 10px; align-items: center">
-          <label
-            ><input type="checkbox" class="src-check" value="news" checked />
-            News</label
-          >
-          <label
-            ><input type="checkbox" class="src-check" value="twitter" />
-            Twitter</label
-          >
+    <div class="top-container">
+      <header class="main-header">
+        <div class="header-left">
+          <img
+            src="{{ url_for('static', filename='assets/IndianNavyCrest-NewDesignBW6F-removebg-preview.png') }}"
+            class="header-logo"
+            alt="Indian Navy"
+          />
         </div>
+
+        <div class="header-center">
+          <h2>OSINT DASHBOARD</h2>
+        </div>
+
+        <div class="header-right">
+          <img
+            src="{{ url_for('static', filename='assets/valsura-removebg-preview.png') }}"
+            class="header-logo"
+            alt="Valsura"
+          />
+        </div>
+      </header>
+
+      <!-- FILTER BAR -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label>Sources:</label>
+          <div style="display: flex; gap: 10px; align-items: center">
+            <label
+              ><input type="checkbox" class="src-check" value="news" checked />
+              News</label
+            >
+            <label
+              ><input type="checkbox" class="src-check" value="twitter" />
+              Twitter</label
+            >
+          </div>
+        </div>
+        <div class="filter-group">
+          <label>Intelligence Sector:</label>
+          <select id="locationSelect">
+            <option value="Andaman and Nicobar Islands">
+              Andaman and Nicobar Islands
+            </option>
+            <option value="Andhra Pradesh">Andhra Pradesh</option>
+            <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+            <option value="Assam">Assam</option>
+            <option value="Bihar">Bihar</option>
+            <option value="Chandigarh">Chandigarh</option>
+            <option value="Chhattisgarh">Chhattisgarh</option>
+            <option value="Dadra and Nagar Haveli and Daman and Diu">
+              Dadra and Nagar Haveli and Daman and Diu
+            </option>
+            <option value="Delhi">Delhi</option>
+            <option value="Goa">Goa</option>
+            <option value="Gujarat" selected>Gujarat</option>
+            <option value="Haryana">Haryana</option>
+            <option value="Himachal Pradesh">Himachal Pradesh</option>
+            <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+            <option value="Jharkhand">Jharkhand</option>
+            <option value="Karnataka">Karnataka</option>
+            <option value="Kerala">Kerala</option>
+            <option value="Ladakh">Ladakh</option>
+            <option value="Lakshadweep">Lakshadweep</option>
+            <option value="Madhya Pradesh">Madhya Pradesh</option>
+            <option value="Maharashtra">Maharashtra</option>
+            <option value="Manipur">Manipur</option>
+            <option value="Meghalaya">Meghalaya</option>
+            <option value="Mizoram">Mizoram</option>
+            <option value="Nagaland">Nagaland</option>
+            <option value="Odisha">Odisha</option>
+            <option value="Puducherry">Puducherry</option>
+            <option value="Punjab">Punjab</option>
+            <option value="Rajasthan">Rajasthan</option>
+            <option value="Sikkim">Sikkim</option>
+            <option value="Tamil Nadu">Tamil Nadu</option>
+            <option value="Telangana">Telangana</option>
+            <option value="Tripura">Tripura</option>
+            <option value="Uttar Pradesh">Uttar Pradesh</option>
+            <option value="Uttarakhand">Uttarakhand</option>
+            <option value="West Bengal">West Bengal</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Threat Keyword:</label>
+          <input
+            type="text"
+            id="keywordSelect"
+            placeholder="e.g. Artificial Intelligence"
+            style="text-transform: none"
+          />
+        </div>
+
+        <div class="filter-group">
+          <label>From:</label>
+          <input type="date" id="fromDate" />
+        </div>
+
+        <div class="filter-group">
+          <label>To:</label>
+          <input type="date" id="toDate" />
+        </div>
+
+        <div class="filter-group">
+          <label>Maritime Country:</label>
+          <select id="countrySelect">
+            <option value="All">All</option>
+            <option value="Pakistan">Pakistan</option>
+            <option value="China">China</option>
+            <option value="Bangladesh">Bangladesh</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Vessel Type:</label>
+          <select id="typeSelect">
+            <option value="All">All</option>
+            <option value="Naval">Naval</option>
+            <option value="Cargo">Cargo</option>
+            <option value="Tanker">Tanker</option>
+          </select>
+        </div>
+
+        <button class="apply-btn" onclick="applyFilters()">
+          Execute Intelligence Scan
+        </button>
+
+        <nav class="nav">
+          <button onclick="showInsights()">Insights</button>
+          <button onclick="showMap()">Map</button>
+          <button onclick="showNews()">List</button>
+
+          <div class="map-legend">
+            <div class="legend-item">
+              <span class="dot news-dot"></span> News/Intel
+            </div>
+            <div class="legend-item">
+              <span class="dot naval-dot"></span> Naval Ships
+            </div>
+            <div class="legend-item">
+              <span class="dot cargo-dot"></span> Cargo Ships
+            </div>
+            <div class="legend-item">
+              <span class="dot tanker-dot"></span> Tankers
+            </div>
+            <div class="legend-item">
+              <span class="icon port-icon">📍</span> Ports
+            </div>
+          </div>
+        </nav>
       </div>
-      <div class="filter-group">
-  <label>Intelligence Sector:</label>
-  <select id="locationSelect">
-    <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
-    <option value="Andhra Pradesh">Andhra Pradesh</option>
-    <option value="Arunachal Pradesh">Arunachal Pradesh</option>
-    <option value="Assam">Assam</option>
-    <option value="Bihar">Bihar</option>
-    <option value="Chandigarh">Chandigarh</option>
-    <option value="Chhattisgarh">Chhattisgarh</option>
-    <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
-    <option value="Delhi">Delhi</option>
-    <option value="Goa">Goa</option>
-    <option value="Gujarat" selected>Gujarat</option>
-    <option value="Haryana">Haryana</option>
-    <option value="Himachal Pradesh">Himachal Pradesh</option>
-    <option value="Jammu and Kashmir">Jammu and Kashmir</option>
-    <option value="Jharkhand">Jharkhand</option>
-    <option value="Karnataka">Karnataka</option>
-    <option value="Kerala">Kerala</option>
-    <option value="Ladakh">Ladakh</option>
-    <option value="Lakshadweep">Lakshadweep</option>
-    <option value="Madhya Pradesh">Madhya Pradesh</option>
-    <option value="Maharashtra">Maharashtra</option>
-    <option value="Manipur">Manipur</option>
-    <option value="Meghalaya">Meghalaya</option>
-    <option value="Mizoram">Mizoram</option>
-    <option value="Nagaland">Nagaland</option>
-    <option value="Odisha">Odisha</option>
-    <option value="Puducherry">Puducherry</option>
-    <option value="Punjab">Punjab</option>
-    <option value="Rajasthan">Rajasthan</option>
-    <option value="Sikkim">Sikkim</option>
-    <option value="Tamil Nadu">Tamil Nadu</option>
-    <option value="Telangana">Telangana</option>
-    <option value="Tripura">Tripura</option>
-    <option value="Uttar Pradesh">Uttar Pradesh</option>
-    <option value="Uttarakhand">Uttarakhand</option>
-    <option value="West Bengal">West Bengal</option>
-  </select>
-</div>
-
-      <div class="filter-group">
-        <label>Threat Keyword:</label>
-        <select id="keywordSelect">
-          <option value="military activity">Military Activity</option>
-          <option value="non state actors">Non State Actors</option>
-          <option value="hacktivists">Hacktivists</option>
-          <option value="internal actors">Internal Actors</option>
-          <option value="Artificial Intelligence">Artificial Intelligence</option>
-          <option value="paramilitary">Paramilitary</option>
-          <option value="Indian Navy">Indian Navy</option>
-          <option value="Indian Army">Indian Army</option>
-          <option value="border tension">Border Tension</option>
-          <option value="maritime security">Maritime Security</option>
-          <option value="Anti-Terrorism Squad">Anti Terrorism Squad</option>
-
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <label>From:</label>
-        <input type="date" id="fromDate" />
-      </div>
-
-      <div class="filter-group">
-        <label>To:</label>
-        <input type="date" id="toDate" />
-      </div>
-
-      <button class="apply-btn" onclick="applyFilters()">
-        Execute Intelligence Scan
-      </button>
     </div>
-
-    <!-- MAP SECTION -->
+    <div id="scanInfoBar" class="scan-info-bar" style="display: none">
+      <div class="info-item">
+        <span class="info-label">Sector:</span>
+        <span id="displaySector" class="info-value">--</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Objective:</span>
+        <span id="displayKeyword" class="info-value">--</span>
+      </div>
+    </div>
     <div id="mapSection" class="section active">
-      <h2>Military & Naval Intelligence Heatmap</h2>
       <div id="map"></div>
     </div>
 
     <!-- NEWS SECTION -->
     <div id="newsSection" class="section">
-      <h2>Summarized Defence Newsletters</h2>
       <div id="newsContent"></div>
     </div>
 
     <!-- AI SECTION -->
     <div id="insightsSection" class="section">
-      <h2>AI Strategic Intelligence Assessment</h2>
       <div id="aiContent"></div>
     </div>
-
-    <footer class="footer">
-      <span>© Defence OSINT Analytics Engine</span>
-      <span>For Internal Strategic Use</span>
-    </footer>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 
     <script>
       window.onload = function () {
-        // Set default dates to avoid empty results
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split("T")[0];
         document.getElementById("toDate").value = today;
-    
-        // Trigger the master scan instead of the old separate functions
-        //applyFilters(); 
+
+        // Set Map as default active button
+        updateNavButtons("Map");
       };
     </script>
   </body>

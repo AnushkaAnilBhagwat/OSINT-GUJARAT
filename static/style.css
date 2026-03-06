@@ -1,3 +1,4 @@
+/* ===== GLOBAL STYLES ===== */
 body {
     margin: 0;
     font-family: 'Segoe UI', Tahoma, sans-serif;
@@ -5,51 +6,46 @@ body {
     color: white;
 }
 
-.main-header {
-    display: flex;
-    justify-content: space-between;
-    /* This creates the three-column layout */
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #0a192f;
-    /* Matching your dark theme */
-    border-bottom: 2px solid #00d4ff;
-    /* Techy underline */
+/* 1. Create the sticky wrapper */
+.top-container {
     position: sticky;
     top: 0;
     z-index: 1000;
+    background: #081421;
+    /* Matches body background to prevent transparency gaps */
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===== HEADER & NAVIGATION ===== */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #0a192f;
+    border-bottom: 2px solid #00d4ff;
+    position: static !important;
 }
 
 .header-logo {
     height: 65px;
-    /* Adjust height as needed */
     width: auto;
     display: block;
 }
 
-/* Responsive fix: Hide or shrink logos on small mobile screens */
-@media (max-width: 600px) {
-    .header-logo {
-        height: 40px;
-        top: 5px;
-    }
-}
-
-/* ===== NAVBAR ===== */
 .nav {
-    margin: 10px auto;
+    margin: 0 auto !important;
     text-align: center;
-    padding-top: 10px;
     background: rgba(8, 20, 33, 0.85);
     backdrop-filter: blur(10px);
-    padding: 15px;
+    padding: 10px;
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 30px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
 }
 
-/* Modern Toggle Buttons */
 .nav button {
     padding: 10px 20px;
     background: transparent;
@@ -69,283 +65,31 @@ body {
     transform: translateY(-2px);
 }
 
-/* ===== HEADERS ===== */
-h2 {
-    font-size: 32px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    background: linear-gradient(90deg, #00f7ff, #00aaff);
-
-    /* Standard property */
-    background-clip: text;
-
-    /* Webkit for Chrome/Safari */
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-
-    color: transparent;
-    /* Fallback */
-
-    margin-bottom: 20px;
-    text-align: center;
-    text-shadow: 0 0 20px rgba(0, 247, 255, 0.3);
-}
-
-/* Sections */
-.section {
-    display: none;
-}
-
-.active {
-    display: block;
-}
-
-#map {
-    height: 75vh;
-    width: 100%;
-    border-radius: 15px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
-}
-
-/* ===== NEWS SECTION ===== */
-#newsSection {
-    min-height: 100vh;
-}
-
-#newsContent {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 30px;
-    margin-top: 30px;
-}
-
-/* ===== MODERN CARDS ===== */
-.date-tag {
-    font-size: 0.85rem;
-    color: #00d4ff;
-    /* Tech blue */
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    display: block;
-    margin-bottom: 10px;
-    opacity: 0.8;
-}
-
-.card {
-    position: relative;
-    background: linear-gradient(145deg, #0f1f2f, #13283c);
-    padding: 25px;
-    border-radius: 18px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    overflow: hidden;
-    margin-bottom: 20px;
-}
-
-/* Accent Glow Strip */
-.card::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 5px;
-    background: linear-gradient(90deg, #00f7ff, #007bff);
-}
-
-.card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 20px 50px rgba(0, 247, 255, 0.25);
-}
-
-/* Title */
-.card h3 {
-    color: #00f7ff;
-    font-size: 20px;
-    margin-bottom: 12px;
-    line-height: 1.4;
-}
-
-/* Summary */
-.card p {
-    color: #b0c4d4;
-    font-size: 14px;
-    line-height: 1.6;
-    flex-grow: 1;
-}
-
-/* ===== BUTTON STYLE (NEW LAYOUT) ===== */
-.card a {
-    margin-top: 20px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 20px;
-    border-radius: 40px;
-    font-weight: 700;
-    background: linear-gradient(90deg, #00f7ff, #007bff);
+/* Persistent glow for the current active page button */
+.nav button.active-nav {
+    background: #00f7ff;
     color: #081421;
-    text-decoration: none;
-    transition: 0.3s ease;
-    position: relative;
-    overflow: hidden;
+    box-shadow: 0 0 15px #00f7ff;
+    border-color: #00f7ff;
+    transform: translateY(-2px);
 }
 
-/* Sliding Shine Effect */
-.card a::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: skewX(-20deg);
-    transition: 0.5s;
-}
-
-.card a:hover::after {
-    left: 120%;
-}
-
-.card a:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px #00f7ff;
-}
-
-/* Links */
-a {
-    color: #00d4ff;
-    text-decoration: none;
-}
-
-/* ===== AI INSIGHTS PANEL ===== */
-
-#insightsSection {
-    min-height: 100vh;
-}
-
-#aiContent {
-    max-width: 1000px;
-    margin: 40px auto;
-    padding: 40px;
-    background: linear-gradient(145deg, #0e1e2e, #13283c);
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
-    position: relative;
-    overflow: hidden;
-}
-
-.intel-brief-card {
-    max-width: 900px;
-    margin: 30px auto;
-    background: #0a192f;
-    border: 1px solid #00d4ff;
-    box-shadow: 0 0 30px rgba(0, 212, 255, 0.1);
-    font-family: 'Courier New', Courier, monospace;
-}
-
-.intel-banner {
-    background: #00d4ff;
-    color: #06111d;
-    font-weight: bold;
-    text-align: center;
-    padding: 5px;
-    font-size: 0.8rem;
-    letter-spacing: 2px;
-}
-
-.intel-body {
-    padding: 40px;
-}
-
-.intel-heading {
-    color: #00d4ff;
-    font-weight: bold;
-    font-size: 1.2rem;
-    margin: 30px 0 15px 0;
-    border-bottom: 1px dashed #00d4ff;
-}
-
-.intel-item {
-    margin-bottom: 20px;
-    border-left: 3px solid #00d4ff;
-    padding-left: 15px;
-    line-height: 1.6;
-}
-
-.intel-metadata {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.7rem;
-    color: #555;
-    margin-bottom: 30px;
-}
-
-#aiContent::before {
-    content: "AI INTELLIGENCE REPORT";
-    position: absolute;
-    top: -20px;
-    right: 20px;
-    font-size: 80px;
-    font-weight: 900;
-    color: rgba(0, 247, 255, 0.03);
-    pointer-events: none;
-}
-
-#aiContent p {
-    color: #b0c4d4;
-    line-height: 1.8;
-    font-size: 15px;
-    white-space: pre-line;
-}
-
-.loader {
-    border: 4px solid #0f2a40;
-    border-top: 4px solid #00f7ff;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 20px;
-}
-
-.analysis-text {
-    line-height: 1.6;
-    color: #e0e0e0;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border-left: 4px solid #00d4ff;
-    border-radius: 4px;
-    white-space: pre-wrap;
-    /* Preserves line breaks from the AI */
-}
-
-/* Updated Filter Bar Layout */
+/* ===== FILTER BAR ===== */
 .filter-bar {
     display: flex;
     flex-wrap: wrap;
-    /* Allows wrapping on smaller screens */
     justify-content: space-evenly;
-    /* Spreads elements out */
     align-items: flex-end;
-    /* Aligns labels and inputs to the bottom */
     gap: 20px;
     padding: 20px;
     background: rgba(11, 28, 45, 0.95);
     border-bottom: 1px solid #00d4ff33;
-    margin-bottom: 20px;
+    margin-bottom: 0 !important;
 }
 
 .filter-group {
     display: flex;
     flex-direction: column;
-    /* Puts label above the select/input */
     gap: 8px;
 }
 
@@ -367,7 +111,7 @@ a {
 }
 
 .apply-btn {
-    padding: 10px 20px;
+    padding: 5px 15px;
     background: linear-gradient(90deg, #007bff, #00d4ff);
     border: none;
     color: #081421;
@@ -376,12 +120,324 @@ a {
     cursor: pointer;
     transition: 0.3s;
     height: 40px;
-    /* Matching height of inputs */
 }
 
 .apply-btn:hover {
     box-shadow: 0 0 15px #00d4ff;
     transform: translateY(-2px);
+}
+
+/* ===== NEWS SECTION & "NICE" CARDS ===== */
+#newsSection {
+    min-height: 100vh;
+}
+
+#newsContent {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.news-card {
+    position: relative;
+    background: linear-gradient(145deg, #0f1f2f, #13283c);
+    padding: 25px;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.news-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, #00f7ff, #007bff);
+}
+
+.news-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 50px rgba(0, 247, 255, 0.25);
+}
+
+.news-card h4 {
+    color: #00f7ff;
+    font-size: 20px;
+    margin-bottom: 12px;
+    line-height: 1.4;
+    margin-top: 0;
+}
+
+.news-card p {
+    color: #b0c4d4;
+    font-size: 14px;
+    line-height: 1.6;
+    flex-grow: 1;
+}
+
+.news-card small {
+    font-size: 0.8rem;
+    color: #00d4ff;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 15px;
+    opacity: 0.8;
+}
+
+/* ===== MAP & SECTIONS ===== */
+.section {
+    display: none;
+}
+
+.active {
+    display: block;
+}
+
+#map {
+    height: 75vh;
+    width: 100%;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+}
+
+h2 {
+    font-size: 32px;
+    font-weight: 800;
+    text-align: center;
+    background: linear-gradient(90deg, #00f7ff, #00aaff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 20px rgba(0, 247, 255, 0.3);
+}
+
+/* ===== AI INSIGHTS PANEL (STRUCTURED INTELLIGENCE BRIEF) ===== */
+#insightsSection {
+    min-height: 100vh;
+}
+
+#aiContent {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 40px;
+    background: linear-gradient(145deg, #0e1e2e, #13283c);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Watermark for AI Report */
+#aiContent::before {
+    content: "STRATEGIC AI ANALYSIS";
+    position: absolute;
+    top: -20px;
+    right: 20px;
+    font-size: 70px;
+    font-weight: 900;
+    color: rgba(0, 247, 255, 0.03);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* Intelligence Brief Card Style */
+.intel-brief-card {
+    background: #0a192f;
+    border: 1px solid #00d4ff55;
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.1);
+    font-family: 'Courier New', Courier, monospace;
+    margin: 10px 0;
+}
+
+.intel-banner {
+    background: #00d4ff;
+    color: #06111d;
+    font-weight: bold;
+    text-align: center;
+    padding: 8px;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.intel-body {
+    padding: 30px;
+}
+
+.intel-metadata {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #00d4ff;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #00d4ff33;
+    padding-bottom: 10px;
+}
+
+.intel-heading {
+    color: #00f7ff;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin: 25px 0 15px 0;
+    text-transform: uppercase;
+    text-decoration: underline;
+    letter-spacing: 1px;
+}
+
+.intel-item {
+    margin-bottom: 15px;
+    border-left: 3px solid #00d4ff;
+    padding-left: 15px;
+    line-height: 1.6;
+    color: #b0c4d4;
+}
+
+.intel-content p {
+    color: #b0c4d4;
+    line-height: 1.8;
+    font-size: 15px;
+}
+
+/* ===== UTILITIES ===== */
+.loader {
+    border: 4px solid #0f2a40;
+    border-top: 4px solid #00f7ff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+/* Legend Container inside Nav */
+.map-legend {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-left: 20px;
+    padding-left: 20px;
+    border-left: 1px solid #00f7ff55;
+}
+
+.legend-item {
+    font-size: 0.75rem;
+    color: #b0c4d4;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Dots matching your JS colors */
+.dot {
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid #ffffffaa;
+}
+
+.news-dot {
+    background-color: #8800ff;
+    box-shadow: 0 0 5px #8800ff;
+}
+
+.naval-dot {
+    background-color: red;
+    box-shadow: 0 0 5px red;
+}
+
+.cargo-dot {
+    background-color: blue;
+    box-shadow: 0 0 5px blue;
+}
+
+.tanker-dot {
+    background-color: green;
+    box-shadow: 0 0 5px green;
+}
+
+/* Green also used for Tankers */
+
+.port-icon {
+    font-size: 1rem;
+    filter: drop-shadow(0 0 2px #00f7ff);
+}
+
+/* Bar between Navbar and Content */
+.scan-info-bar {
+    background: rgba(10, 25, 47, 0.9);
+    border-bottom: 1px solid #00f7ff33;
+    padding: 10px 40px;
+    display: flex;
+    gap: 40px;
+    font-family: 'Courier New', Courier, monospace;
+    /* Strategic/Terminal font */
+    backdrop-filter: blur(5px);
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.info-label {
+    color: #00d4ff;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.info-value {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+/* Add a subtle "Active Scan" pulse to the value */
+.info-value::after {
+    content: " [LIVE]";
+    font-size: 0.6rem;
+    color: #ff0000;
+    vertical-align: middle;
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Ensure Legend wraps nicely on small screens */
+@media (max-width: 900px) {
+    .map-legend {
+        border-left: none;
+        margin-left: 0;
+        margin-top: 10px;
+        justify-content: center;
+    }
 }
 
 @keyframes spin {
@@ -391,5 +447,24 @@ a {
 
     100% {
         transform: rotate(360deg);
+    }
+}
+
+/* Responsive Fixes */
+@media (max-width: 600px) {
+    .header-logo {
+        height: 45px;
+    }
+
+    h2 {
+        font-size: 24px;
+    }
+
+    .nav {
+        flex-wrap: wrap;
+    }
+
+    #aiContent {
+        padding: 20px;
     }
 }

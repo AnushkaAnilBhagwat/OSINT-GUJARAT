@@ -147,12 +147,18 @@ def fetch_all_intel():
     geo_articles = []
 
     for article in all_articles:
-        lat = base_coords[0] + random.uniform(-0.8, 0.8)
-        lon = base_coords[1] + random.uniform(-0.8, 0.8)
+        lat = base_coords[0] + random.uniform(-0.1, 0.1)
+        lon = base_coords[1] + random.uniform(-0.1, 0.1)
         heat_points.append([lat, lon, 0.7])
         # Pass the original source key through to the frontend
-        geo_articles.append({**article, "lat": lat, "lon": lon, "source": article.get("source", "News")})
-
+        geo_item = article.copy()
+        geo_item.update({
+            "lat": lat,
+            "lon": lon,
+            "source": article.get("source", "News")
+        })
+        geo_articles.append(geo_item)
+        
     return jsonify({"heat": heat_points, "articles": geo_articles, "center": base_coords})
 
 def fetch_twitter(keyword=None, location=None, from_date=None, to_date=None):
@@ -192,56 +198,68 @@ def fetch_twitter(keyword=None, location=None, from_date=None, to_date=None):
 def fetch_news(keyword=None, location=None, from_date=None, to_date=None):
     global cached_articles
 
-    # Ensure location is always used to filter
+    # Use a specific term for the frequency check
+    # If no keyword is selected, we fall back to "defence" as the primary threat term
     if keyword and keyword != "None":
         search_query = f"{keyword} {location}"
     else:
         search_query = f"{location} defence"
-    
-
-    cache_key = f"{search_query}_{from_date}_{to_date}"
-
+        
+    cache_key = f"{search_query}_{from_date}_{to_date}_freq_filtered"
     if (cache_key in cached_articles and time.time() - cached_articles[cache_key]["time"] < 600):
         return cached_articles[cache_key]["data"]
 
     url = "https://newsapi.org/v2/everything"
     params = {
-        # 'qInTitle' ensures the keywords MUST be in the headline
         "q": search_query, 
         "language": "en",
         "sortBy": "relevancy",
         "apiKey": NEWS_API_KEY,
-        "pageSize": 50
+        "pageSize": 20
     }
     if from_date: params["from"] = from_date
     if to_date: params["to"] = to_date
 
     response = requests.get(url, params=params)
     if response.status_code != 200:
+        print(f"NewsAPI Error {response.status_code}: {response.text}")
         return []
 
     data = response.json()
     articles = []
 
     for item in data.get("articles", []):
-        try:
-            dt = datetime.strptime(item["publishedAt"], "%Y-%m-%dT%H:%M:%SZ")
-        except:
-            dt = datetime.now()
+        # 1. Combine all available text to check for keyword density
+        # We use .lower() to ensure case-insensitive counting
+        title = (item.get("title") or "").lower()
+        description = (item.get("description") or "").lower()
+        content = (item.get("content") or "").lower()
+        full_text_snapshot = f"{title} {description} {content}"
 
-        # Get AI summary or fallback
-        raw_text = item.get("content") or item.get("description") or item.get("title")
-        short_summary = get_ai_summary(raw_text)
-        if not short_summary:
-            short_summary = item.get("description") or item.get("title")
+        # 2. Count occurrences of the threat keyword
+        keyword_count = full_text_snapshot.count(keyword.lower())
 
-        articles.append({
-            "title": item["title"],
-            "summary": short_summary,
-            "link": item["url"],
-            "published": dt.strftime("%b %d, %Y"),
-            "published_dt": dt
-        })
+        # 3. Apply the Strict Filter: only proceed if count > 1
+        if keyword_count > 1:
+            try:
+                dt = datetime.strptime(item["publishedAt"], "%Y-%m-%dT%H:%M:%SZ")
+            except:
+                dt = datetime.now()
+
+            raw_text = item.get("content") or item.get("description") or item.get("title")
+            short_summary = get_ai_summary(raw_text)
+            if not short_summary:
+                short_summary = item.get("description") or item.get("title")
+
+            articles.append({
+                "title": item["title"],
+                "summary": short_summary,
+                "link": item["url"],
+                "published": dt.strftime("%b %d, %Y"),
+                "published_dt": dt,
+                "source": "News",
+                "keyword_density": keyword_count # Optional: pass this to frontend for sorting
+            })
 
     cached_articles[cache_key] = {"data": articles, "time": time.time()}
     return articles
@@ -401,23 +419,33 @@ def maritime_data():
 
     ports = [
             # India
-        {"name": "Mundra Port", "lat": 22.74, "lon": 69.70, "country": "India"},
-        {"name": "Mumbai Port", "lat": 18.95, "lon": 72.84, "country": "India"},
-        {"name": "Goa Port", "lat": 15.40, "lon": 73.80, "country": "India"},
-        {"name": "Kochi Port", "lat": 9.97, "lon": 76.26, "country": "India"},
-        {"name": "Chennai Port", "lat": 13.08, "lon": 80.27, "country": "India"},
-        {"name": "Visakhapatnam Port", "lat": 17.69, "lon": 83.25, "country": "India"},
-        {"name": "Kolkata Port", "lat": 22.55, "lon": 88.30, "country": "India"},
-        {"name": "Port Blair Port", "lat": 11.67, "lon": 92.75, "country": "India"},
+        # {"name": "Mundra Port", "lat": 22.74, "lon": 69.70, "country": "India"},
+        # {"name": "Mumbai Port", "lat": 18.95, "lon": 72.84, "country": "India"},
+        # {"name": "Goa Port", "lat": 15.40, "lon": 73.80, "country": "India"},
+        # {"name": "Kochi Port", "lat": 9.97, "lon": 76.26, "country": "India"},
+        # {"name": "Chennai Port", "lat": 13.08, "lon": 80.27, "country": "India"},
+        # {"name": "Visakhapatnam Port", "lat": 17.69, "lon": 83.25, "country": "India"},
+        # {"name": "Kolkata Port", "lat": 22.55, "lon": 88.30, "country": "India"},
+        # {"name": "Port Blair Port", "lat": 11.67, "lon": 92.75, "country": "India"},
 
-        # Pakistan
+        # --- PAKISTAN ---
         {"name": "Karachi Port", "lat": 24.85, "lon": 66.99, "country": "Pakistan"},
         {"name": "Gwadar Port", "lat": 25.12, "lon": 62.33, "country": "Pakistan"},
+        {"name": "Bin Qasim", "lat": 24.77, "lon": 67.33, "country": "Pakistan"},
 
-        # China
+        # --- CHINA ---
         {"name": "Shanghai Port", "lat": 31.23, "lon": 121.47, "country": "China"},
-        {"name": "Ningbo Port", "lat": 29.87, "lon": 121.55, "country": "China"},
-        {"name": "Guangzhou Port", "lat": 23.12, "lon": 113.25, "country": "China"},
+        {"name": "Ningbo-Zhoushan", "lat": 29.87, "lon": 121.55, "country": "China"},
+        {"name": "Shenzhen Port", "lat": 22.50, "lon": 113.91, "country": "China"},
+        {"name": "Longpo Naval Base", "lat": 18.25, "lon": 109.65, "country": "China"}, # SSBN Base Hainan
+
+        # --- STRATEGIC INTERNATIONAL ---
+        {"name": "Singapore Port", "lat": 1.28, "lon": 103.86, "country": "Singapore"},
+        {"name": "Hambantota Port", "lat": 6.11, "lon": 81.10, "country": "Sri Lanka"},
+        {"name": "Djibouti Port", "lat": 11.59, "lon": 43.14, "country": "Djibouti"},
+        {"name": "Diego Garcia (US)", "lat": -7.31, "lon": 72.41, "country": "UK/US"},
+        {"name": "Jebel Ali Port", "lat": 24.98, "lon": 55.02, "country": "UAE"},
+        {"name": "NSA Bahrain (US 5th Fleet)", "lat": 26.21, "lon": 50.61, "country": "Bahrain"},
 
         # Bangladesh
         {"name": "Chittagong Port", "lat": 22.33, "lon": 91.82, "country": "Bangladesh"},
@@ -427,27 +455,27 @@ def maritime_data():
     vessels = [
             
         # ---------------- WEST COAST ----------------
-        {"name": "MV Arabian Trader", "lat": 22.8, "lon": 69.7, "country": "India", "type": "Cargo"},
+        # {"name": "MV Arabian Trader", "lat": 22.8, "lon": 69.7, "country": "India", "type": "Cargo"},
         {"name": "MT Gulf Horizon", "lat": 19.0, "lon": 72.8, "country": "Singapore", "type": "Tanker"},
-        {"name": "INS Kolkata", "lat": 15.4, "lon": 73.8, "country": "India", "type": "Naval"},
+        # {"name": "INS Kolkata", "lat": 15.4, "lon": 73.8, "country": "India", "type": "Naval"},
         {"name": "MV Persian Star", "lat": 17.2, "lon": 72.5, "country": "Iran", "type": "Cargo"},
 
         # ---------------- EAST COAST ----------------
-        {"name": "MV Bay Carrier", "lat": 13.1, "lon": 80.3, "country": "India", "type": "Cargo"},
+        # {"name": "MV Bay Carrier", "lat": 13.1, "lon": 80.3, "country": "India", "type": "Cargo"},
         {"name": "MT Pacific Energy", "lat": 17.7, "lon": 83.3, "country": "Japan", "type": "Tanker"},
-        {"name": "INS Vikramaditya", "lat": 8.4, "lon": 76.9, "country": "India", "type": "Naval"},
+        # {"name": "INS Vikramaditya", "lat": 8.4, "lon": 76.9, "country": "India", "type": "Naval"},
         {"name": "MV Dragon Pearl", "lat": 31.2, "lon": 122.5, "country": "China", "type": "Cargo"},
         
         # ---------------- ANDAMAN ----------------
-        {"name": "INS Baaz Patrol", "lat": 11.7, "lon": 92.7, "country": "India", "type": "Naval"},
+        # {"name": "INS Baaz Patrol", "lat": 11.7, "lon": 92.7, "country": "India", "type": "Naval"},
         {"name": "MV Strait Runner", "lat": 9.8, "lon": 94.5, "country": "Malaysia", "type": "Cargo"},
 
         # ---------------- FISHING & COASTAL ----------------
-        {"name": "FV Kerala Queen", "lat": 9.9, "lon": 76.2, "country": "India", "type": "Cargo"},
+        # {"name": "FV Kerala Queen", "lat": 9.9, "lon": 76.2, "country": "India", "type": "Cargo"},
         {"name": "MT Global Energy", "lat": 21.0, "lon": 88.0, "country": "Liberia", "type": "Tanker"},
 
         # ---------------- INDIA ----------------
-        {"name": "MV Indian Trader", "lat": 18.5, "lon": 72.2, "country": "India", "type": "Cargo"},
+        # {"name": "MV Indian Trader", "lat": 18.5, "lon": 72.2, "country": "India", "type": "Cargo"},
 
         # ---------------- PAKISTAN ----------------
         {"name": "PNS Zulfiquar", "lat": 24.8, "lon": 67.0, "country": "Pakistan", "type": "Naval"},
@@ -456,6 +484,11 @@ def maritime_data():
         # ---------------- CHINA ----------------
         {"name": "PLAN Type 052D", "lat": 31.2, "lon": 121.4, "country": "China", "type": "Naval"},
         {"name": "MV Yangtze Trader", "lat": 29.8, "lon": 121.6, "country": "China", "type": "Cargo"},
+        
+        # --- CHINESE (PLAN) & IRANIAN PRESENCE ---
+        {"name": "PLAN Type 052D", "lat": 24.50, "lon": 62.00, "country": "China", "type": "Naval"}, # Near Gwadar
+        {"name": "Shi Yan 6 (Research)", "lat": 6.50, "lon": 79.50, "country": "China", "type": "Naval"}, # Near Sri Lanka
+        {"name": "IRIS Dena (Frigate)", "lat": 7.50, "lon": 78.50, "country": "Iran", "type": "Naval"}, # Sri Lankan Waters
 
         # ---------------- BANGLADESH ----------------
         {"name": "BNS Bangabandhu", "lat": 22.3, "lon": 91.8, "country": "Bangladesh", "type": "Naval"},
@@ -463,7 +496,7 @@ def maritime_data():
 
         # ---------------- DEEP SEA ----------------
         {"name": "MT Sea Phantom", "lat": 22.0, "lon": 88.30, "country": "Liberia", "type": "Tanker"},
-        {"name": "FV Fisher Ace", "lat": 8.4, "lon": 77.0, "country": "India", "type": "Cargo"}
+        # {"name": "FV Fisher Ace", "lat": 8.4, "lon": 77.0, "country": "India", "type": "Cargo"}
 
     ]
 
