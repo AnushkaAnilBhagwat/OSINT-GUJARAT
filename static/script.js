@@ -63,6 +63,7 @@ function applyFilters() {
     const sources = Array.from(document.querySelectorAll('.src-check:checked')).map(cb => cb.value).join(',');
     const country = document.getElementById("countrySelect").value;
     const vesselType = document.getElementById("typeSelect").value;
+    const lastUpdatedEl = document.getElementById('last-updated-display');
 
     // --- Keyword and Location display ---
     const infoBar = document.getElementById("scanInfoBar");
@@ -96,7 +97,7 @@ function applyFilters() {
                 // RESTORED: Professional News Popup Format
                 marker.bindPopup(`
     <div style="min-width:250px; color:#333; font-family: 'Segoe UI', sans-serif;">
-        <small style="color:#666;"><b>[${article.source.toUpperCase()}] - ${article.published}</b></small><br>
+        <small style="color:#666;"><b>[${article.site_source.toUpperCase()}] - ${article.published}</b></small><br>
         <strong style="font-size:15px; display:block; margin-top:5px;">${article.title}</strong>
         <hr style="margin:8px 0; border:0; border-top:1px solid #eee;">
         <p style="font-size:13px; line-height:1.4; color:#444;">${article.summary}</p>
@@ -121,6 +122,9 @@ function applyFilters() {
     fetch(`/api/maritime-data?country=${country}&type=${vesselType}`)
         .then(res => res.json())
         .then(data => {
+            if (lastUpdatedEl && data.last_updated) {
+                lastUpdatedEl.innerHTML = `Data Live As Of: <strong>${data.last_updated}</strong>`;
+            }
             // Add Ports
             data.ports.forEach(port => {
                 L.marker([port.lat, port.lon])
@@ -141,7 +145,10 @@ function applyFilters() {
                     <div style="color:#333;">
                         <strong>${vessel.name}</strong><br>
                         Type: ${vessel.type}<br>
-                        Flag: ${vessel.country}
+                        Flag: ${vessel.country}<br>
+                        Status: ${vessel.status || 'Active'}<br>
+                        Last Updated: ${vessel.time}<br>
+                        Source: ${vessel.source}
                     </div>
                 `).addTo(maritimeMarkersLayer);
             });
