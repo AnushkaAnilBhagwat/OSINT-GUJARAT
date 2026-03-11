@@ -1,10 +1,8 @@
 from flask import Flask, jsonify, render_template, request
 import requests
 import random
-import re
 from groq import Groq
 import os
-from newspaper import Article
 import time
 from datetime import datetime
 from dotenv import load_dotenv
@@ -63,27 +61,6 @@ INDIAN_STATES = {
     "Uttarakhand": (30.0668, 79.0193),
     "West Bengal": (22.9868, 87.8550)
 }
-
-INTEL_KEYWORDS = [
-    "military activity",
-    "non state actors",
-    "hacktivists",
-    "internal actors",
-    "Artificial Intelligence",
-    "paramilitary",
-    "Indian Navy",
-    "Indian Army",
-    "border tension",
-    "maritime security",
-    "Anti-Terrorism Squad"
-]
-
-
-# Gujarat Geographic Bounds
-GUIJARAT_BOUNDS = [20.0, 68.0, 25.0, 74.0]
-LAT_MIN, LAT_MAX = 20.0, 24.7
-LON_MIN, LON_MAX = 68.0, 74.5
-
 
 cached_articles = {}
 
@@ -355,13 +332,7 @@ def heatmap():
             from_date=from_date,
             to_date=to_date
         ))
-    # articles = fetch_news(
-    #     keyword=keyword, 
-    #     location=location_name, 
-    #     from_date=from_date, 
-    #     to_date=to_date
-    # )
-    
+     
     # Get base coordinates for the selected state to center the heatmap
     base_coords = INDIAN_STATES.get(location_name, (22.2587, 71.1924))
     
@@ -422,16 +393,6 @@ def maritime_data():
     vessel_type = request.args.get("type", "All")
 
     ports = [
-            # India
-        # {"name": "Mundra Port", "lat": 22.74, "lon": 69.70, "country": "India"},
-        # {"name": "Mumbai Port", "lat": 18.95, "lon": 72.84, "country": "India"},
-        # {"name": "Goa Port", "lat": 15.40, "lon": 73.80, "country": "India"},
-        # {"name": "Kochi Port", "lat": 9.97, "lon": 76.26, "country": "India"},
-        # {"name": "Chennai Port", "lat": 13.08, "lon": 80.27, "country": "India"},
-        # {"name": "Visakhapatnam Port", "lat": 17.69, "lon": 83.25, "country": "India"},
-        # {"name": "Kolkata Port", "lat": 22.55, "lon": 88.30, "country": "India"},
-        # {"name": "Port Blair Port", "lat": 11.67, "lon": 92.75, "country": "India"},
-
         # --- PAKISTAN ---
         {"name": "Karachi Port", "lat": 24.85, "lon": 66.99, "country": "Pakistan"},
         {"name": "Gwadar Port", "lat": 25.12, "lon": 62.33, "country": "Pakistan"},
@@ -459,23 +420,17 @@ def maritime_data():
     vessels = [
             
         # ---------------- WEST COAST ----------------
-        # {"name": "MV Arabian Trader", "lat": 22.8, "lon": 69.7, "country": "India", "type": "Cargo"},
         {"name": "MT Gulf Horizon", "lat": 19.0, "lon": 72.8, "country": "Singapore", "type": "Tanker", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "INS Kolkata", "lat": 15.4, "lon": 73.8, "country": "India", "type": "Naval"},
         {"name": "MV Persian Star", "lat": 17.2, "lon": 72.5, "country": "Iran", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
 
         # ---------------- EAST COAST ----------------
-        # {"name": "MV Bay Carrier", "lat": 13.1, "lon": 80.3, "country": "India", "type": "Cargo"},
         {"name": "MT Pacific Energy", "lat": 17.7, "lon": 83.3, "country": "Japan", "type": "Tanker", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "INS Vikramaditya", "lat": 8.4, "lon": 76.9, "country": "India", "type": "Naval"},
         {"name": "MV Dragon Pearl", "lat": 31.2, "lon": 122.5, "country": "China", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
         
         # ---------------- ANDAMAN ----------------
-        # {"name": "INS Baaz Patrol", "lat": 11.7, "lon": 92.7, "country": "India", "type": "Naval"},
         {"name": "MV Strait Runner", "lat": 9.8, "lon": 94.5, "country": "Malaysia", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
 
         # ---------------- FISHING & COASTAL ----------------
-        # {"name": "FV Kerala Queen", "lat": 9.9, "lon": 76.2, "country": "India", "type": "Cargo"},
         {"name": "MT Global Energy", "lat": 21.0, "lon": 88.0, "country": "Liberia", "type": "Tanker", "time": "2026-03-10", "source": "AIS.hub"},
 
         # ---------------- INDIA ----------------
@@ -500,47 +455,13 @@ def maritime_data():
 
         # ---------------- DEEP SEA ----------------
         {"name": "MT Sea Phantom", "lat": 22.0, "lon": 88.30, "country": "Liberia", "type": "Tanker", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "FV Fisher Ace", "lat": 8.4, "lon": 77.0, "country": "India", "type": "Cargo"}
         # ---------------- Other Destinations in AIS ----------------
-        # {"name": "MAERSK BALTIMORE", "lat": 18.5, "lon": 70.2, "country": "Denmark", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "JORDAN ROSE", "lat": 19.1, "lon": 71.5, "country": "USA", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "550KEUMRYONG", "lat": 20.3, "lon": 69.8, "country": "South Korea", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "FINNSTAR", "lat": 21.0, "lon": 68.5, "country": "Finland", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "IJVEER 54", "lat": 22.4, "lon": 72.1, "country": "Netherlands", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
         {"name": "KAFFE", "lat": 17.8, "lon": 73.0, "country": "Norway", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "MY ANYA", "lat": 16.5, "lon": 71.2, "country": "Malta", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        {"name": "NINGALOO", "lat": 19.8, "lon": 67.5, "country": "Australia", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "RESCUE POSTKODEN", "lat": 23.1, "lon": 68.9, "country": "Sweden", "type": "SAR", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "HIGH SEAS", "lat": 24.2, "lon": 66.8, "country": "Liberia", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "BIESBOSCH", "lat": 20.5, "lon": 73.5, "country": "Netherlands", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        {"name": "WINDEA THREE", "lat": 18.9, "lon": 69.2, "country": "Germany", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
         {"name": "MARTIN GREEN", "lat": 17.1, "lon": 68.1, "country": "Australia", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "STEPHEN B", "lat": 21.8, "lon": 70.8, "country": "USA", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "MESTRE JOAO RICO", "lat": 18.2, "lon": 69.5, "country": "Portugal", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "ATHENA", "lat": 19.5, "lon": 72.1, "country": "Greece", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "ALFONS MARIE", "lat": 20.8, "lon": 68.3, "country": "Netherlands", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "DJURGARDEN 10", "lat": 21.3, "lon": 70.4, "country": "Sweden", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "NINA", "lat": 22.1, "lon": 73.2, "country": "USA", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "STRAND 1", "lat": 17.6, "lon": 71.8, "country": "Norway", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "CTC", "lat": 16.9, "lon": 69.1, "country": "USA", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "AISPLOUZ", "lat": 19.3, "lon": 67.8, "country": "France", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "LIFJORD", "lat": 23.5, "lon": 68.4, "country": "Norway", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "KINYO MARU NO,12", "lat": 24.1, "lon": 66.5, "country": "Japan", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "ZWAANTJE 9", "lat": 20.2, "lon": 73.9, "country": "Netherlands", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        {"name": "NJORD AMUNDSEN", "lat": 18.7, "lon": 69.8, "country": "Gibraltar", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        {"name": "NUEVO LABIO", "lat": 17.4, "lon": 68.6, "country": "Spain", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "MT HAI YIN 1", "lat": 21.6, "lon": 71.1, "country": "Singapore", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        {"name": "WIND SUPPORTER", "lat": 22.8, "lon": 67.2, "country": "Denmark", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        {"name": "RHEIN", "lat": 19.9, "lon": 72.6, "country": "Germany", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
         {"name": "JULIUSPLATE", "lat": 20.6, "lon": 69.3, "country": "Germany", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
-        # {"name": "PSAB", "lat": 18.1, "lon": 70.9, "country": "Singapore", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"},
         {"name": "NZK PONT 102", "lat": 23.9, "lon": 68.0, "country": "Netherlands", "type": "Cargo", "time": "2026-03-10", "source": "AIS.hub"}
 
     ]
-    
-    
-    
-    
     if country_filter != "All":
         ports = [p for p in ports if p["country"] == country_filter]
         vessels = [v for v in vessels if v["country"] == country_filter]
